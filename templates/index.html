@@ -10,7 +10,7 @@
 <body>
     <nav class="navbar">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#">Audit Flow AI</a>
+            <a class="navbar-brand" href="/">Audit Flow AI</a>
             <button id="testButton" class="btn btn-primary">Go to Testing Page</button>
         </div>
     </nav>
@@ -23,7 +23,9 @@
                         <h5 class="card-title">Explain Control Description</h5>
                         <textarea id="controlDescription" class="form-control mb-3" rows="4" placeholder="Enter control description..."></textarea>
                         <button id="explainButton" class="btn btn-primary">Explain</button>
-                        <div id="explanationResult"></div>
+                        <div id="explanationResult" class="mt-3">
+                            <p id="explanation-output"></p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -33,7 +35,10 @@
                         <h5 class="card-title">Rewrite Walkthrough Discussion</h5>
                         <textarea id="walkthroughDiscussion" class="form-control mb-3" rows="4" placeholder="Enter walkthrough discussion..."></textarea>
                         <button id="rewriteButton" class="btn btn-primary">Rewrite</button>
-                        <div id="rewriteResult"></div>
+                        <div id="rewriteResult" class="mt-3">
+                            <p id="rewrite-output"></p>
+                            <button class="btn btn-secondary" onclick="copyText('rewrite-output')">Copy Narrative</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -56,7 +61,7 @@
                 body: JSON.stringify({ control_description: controlDescription })
             });
             const data = await response.json();
-            document.getElementById("explanationResult").innerHTML = `<div class="alert alert-info">${data.explanation}</div>`;
+            document.getElementById("explanation-output").innerText = data.explanation;
         });
 
         // Rewrite Walkthrough Discussion
@@ -71,8 +76,16 @@
                 body: JSON.stringify({ control_description: controlDescription, walkthrough_discussion: walkthroughDiscussion })
             });
             const data = await response.json();
-            document.getElementById("rewriteResult").innerHTML = `<div class="alert alert-info">${data.narrative}</div>`;
+            document.getElementById("rewrite-output").innerText = data.narrative;
         });
+
+        // Copy to Clipboard Functionality
+        function copyText(id) {
+            const text = document.getElementById(id).innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Copied!');
+            });
+        }
     </script>
 </body>
 </html>
