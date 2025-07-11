@@ -44,6 +44,8 @@
             </div>
         </div>
     </div>
+    <div id="toast" class="toast"></div>
+    <div id="spinner" class="spinner"></div>
     <script>
         // Navigate to the testing page
         document.getElementById("testButton").addEventListener("click", () => {
@@ -52,6 +54,7 @@
 
         // Explain Control Description
         document.getElementById("explainButton").addEventListener("click", async () => {
+            showSpinner();
             const controlDescription = document.getElementById("controlDescription").value;
             const response = await fetch("/api/explain", {
                 method: "POST",
@@ -62,11 +65,14 @@
             });
             const data = await response.json();
             document.getElementById("explanation-output").innerText = data.explanation;
+            hideSpinner();
+            showToast("Explanation ready!");
         });
 
         // Rewrite Walkthrough Discussion
         document.getElementById("rewriteButton").addEventListener("click", async () => {
-            const controlDescription = document.getElementById("controlDescription").value; // Use the initial control description
+            showSpinner();
+            const controlDescription = document.getElementById("controlDescription").value;
             const walkthroughDiscussion = document.getElementById("walkthroughDiscussion").value;
             const response = await fetch("/api/rewrite-walkthrough", {
                 method: "POST",
@@ -77,6 +83,8 @@
             });
             const data = await response.json();
             document.getElementById("rewrite-output").innerText = data.narrative;
+            hideSpinner();
+            showToast("Walkthrough rewritten!");
         });
 
         // Copy to Clipboard Functionality
@@ -85,6 +93,25 @@
             navigator.clipboard.writeText(text).then(() => {
                 alert('Copied!');
             });
+        }
+
+        // Toast Notification
+        function showToast(message) {
+            const toast = document.getElementById("toast");
+            toast.innerText = message;
+            toast.classList.add("show");
+            setTimeout(() => {
+                toast.classList.remove("show");
+            }, 3000);
+        }
+
+        // Spinner
+        function showSpinner() {
+            document.getElementById("spinner").style.display = "block";
+        }
+
+        function hideSpinner() {
+            document.getElementById("spinner").style.display = "none";
         }
     </script>
 </body>
