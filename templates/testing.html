@@ -3,33 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Testing</title>
+    <title>Testing Page</title>
+    <!-- Link to CSS -->
+    <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-    <h1>Testing</h1>
-    
-    <section>
-        <h2>Test Script</h2>
-        <textarea id="test-script" rows="5" cols="50" placeholder="Paste test script here..."></textarea><br>
-        <button onclick="addTest()">Add Test</button>
-    </section>
-
-    <section>
-        <h2>Select Test</h2>
-        <select id="test-dropdown">
-            <option value="" disabled selected>Select a test</option>
-            <!-- Dropdown options will be dynamically added -->
-        </select><br>
-        <button onclick="uploadEvidence()">Upload Evidence</button>
-        <input type="file" id="evidence-file" style="display:none;" onchange="analyzeEvidence()">
-        <button onclick="analyzeEvidence()">Analyze Evidence</button>
-        <p id="analysis-result"></p>
-    </section>
-
-    <section>
-        <button onclick="goHome()">Go Back to Home</button>
-    </section>
-
+    <nav class="navbar">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">Audit Flow AI</a>
+        </div>
+    </nav>
+    <div class="container">
+        <h1 class="text-center">Testing Page</h1>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Test Script</h5>
+                        <textarea id="test-script" class="form-control mb-3" rows="5" placeholder="Paste test script here..."></textarea>
+                        <button class="btn btn-primary" onclick="addTest()">Add Test</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Select Test</h5>
+                        <select id="test-dropdown" class="form-control mb-3">
+                            <option value="" disabled selected>Select a test</option>
+                            <!-- Dropdown options will be dynamically added -->
+                        </select>
+                        <button class="btn btn-primary mb-3" onclick="uploadEvidence()">Upload Evidence</button>
+                        <input type="file" id="evidence-file" style="display:none;" onchange="analyzeEvidence()">
+                        <button class="btn btn-primary" onclick="analyzeEvidence()">Analyze Evidence</button>
+                        <p id="analysis-result" class="mt-3"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-4">
+            <div class="col-md-12 text-center">
+                <button class="btn btn-primary" onclick="goHome()">Go Back to Home</button>
+            </div>
+        </div>
+    </div>
     <script>
         const testDropdown = document.getElementById("test-dropdown");
 
