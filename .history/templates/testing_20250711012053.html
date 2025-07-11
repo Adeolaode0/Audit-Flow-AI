@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Testing</title>
+</head>
+<body>
+    <h1>Testing</h1>
+    
+    <section>
+        <h2>Test Script</h2>
+        <textarea id="test-script" rows="5" cols="50" placeholder="Paste test script here..."></textarea><br>
+        <button onclick="addTest()">Add Test</button>
+    </section>
+
+    <section>
+        <h2>Select Test</h2>
+        <select id="test-dropdown">
+            <option value="" disabled selected>Select a test</option>
+            <!-- Dropdown options will be dynamically added -->
+        </select>
+    </section>
+
+    <section>
+        <button onclick="goHome()">Go Back to Home</button>
+    </section>
+
+    <script>
+        const testDropdown = document.getElementById("test-dropdown");
+
+        function addTest() {
+            const testScript = document.getElementById("test-script").value;
+            if (testScript) {
+                const option = document.createElement("option");
+                option.text = testScript;
+                testDropdown.add(option);
+                document.getElementById("test-script").value = ""; // Clear the textarea
+            } else {
+                alert("Please enter a test script.");
+            }
+        }
+
+        function goHome() {
+            window.location.href = "/";
+        }
+    </script>
+</body>
+</html>

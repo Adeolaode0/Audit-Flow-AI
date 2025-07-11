@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Testing</title>
+</head>
+<body>
+    <h1>Testing</h1>
+    
+    <section>
+        <h2>Upload Evidence</h2>
+        <input type="file" id="evidence-file"><br>
+        <button onclick="analyzeEvidence()">Analyze Evidence</button>
+        <p id="analysis-result"></p>
+    </section>
+
+    <script>
+        async function analyzeEvidence() {
+            const fileInput = document.getElementById("evidence-file");
+            const selectedFile = fileInput.files[0];
+
+            if (!selectedFile) {
+                alert("Please upload evidence first.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("evidence", selectedFile);
+
+            const response = await fetch("/api/analyze-evidence", {
+                method: "POST",
+                body: formData
+            });
+
+            const result = await response.json();
+            document.getElementById("analysis-result").innerText = result.analysis || result.error;
+        }
+    </script>
+</body>
+</html>

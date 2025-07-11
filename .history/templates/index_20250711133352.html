@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Flow AI</title>
+</head>
+<body>
+    <h1>Audit Flow AI</h1>
+    
+    <section>
+        <h2>Explain Control Description</h2>
+        <textarea id="control-description" rows="5" cols="50" placeholder="Paste control description here..."></textarea><br>
+        <button onclick="explainControl()">Explain</button>
+        <p id="explanation-result"></p>
+    </section>
+    
+    <section>
+        <h2>Rewrite Walkthrough Discussion</h2>
+        <textarea id="walkthrough-discussion" rows="5" cols="50" placeholder="Paste walkthrough discussion here..."></textarea><br>
+        <button onclick="rewriteWalkthrough()">Rewrite</button>
+        <p id="rewrite-result"></p>
+    </section>
+
+    <section>
+        <button onclick="goToTesting()">Go to Testing Page</button>
+    </section>
+    
+    <script>
+        async function explainControl() {
+            const controlDescription = document.getElementById("control-description").value;
+            const response = await fetch("/api/explain", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ control_description: controlDescription })
+            });
+            const result = await response.json();
+            document.getElementById("explanation-result").innerText = result.explanation || result.error;
+        }
+    
+        async function rewriteWalkthrough() {
+            const controlDescription = document.getElementById("control-description").value;
+            const walkthroughDiscussion = document.getElementById("walkthrough-discussion").value;
+            const response = await fetch("/api/rewrite-walkthrough", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ control_description: controlDescription, walkthrough_discussion: walkthroughDiscussion })
+            });
+            const result = await response.json();
+            document.getElementById("rewrite-result").innerText = result.narrative || result.error;
+        }
+
+        function goToTesting() {
+            window.location.href = "/testing";
+        }
+    </script>
+</body>
+</html>
