@@ -5,14 +5,19 @@ from dotenv import load_dotenv
 from PyPDF2 import PdfReader
 from PIL import Image
 import pytesseract
+from dotenv import load_dotenv
+import os
 
 # Load environment variables
-pytesseract.pytesseract.tesseract_cmd = "/usr/local/bin/tesseract"  # Update path if necessary
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 if not openai.api_key:
     raise ValueError("OpenAI API key not found. Please check your .env file.")
+# Load environment variables
+pytesseract.pytesseract.tesseract_cmd = "/usr/local/bin/tesseract"  # Update path if necessary
+load_dotenv()
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 app = Flask(__name__)
 
@@ -41,10 +46,14 @@ def explain_control():
             ]
         )
         
-        explanation = response.choices[0].message.content
+        explanation = response["choices"][0]["message"]["content"]
         return jsonify({"explanation": explanation})
     
-    except openai.error.OpenAIError as e:
+    except openai.error.RateLimitError:
+        return jsonify({"error": "You have exceeded your quota. Please check your OpenAI account."}), 429
+    except openai.error.AuthenticationError:
+        return jsonify({"error": "Invalid API key. Please check your OpenAI account."}), 401
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/rewrite-walkthrough", methods=["POST"])
@@ -65,10 +74,14 @@ def rewrite_walkthrough():
             ]
         )
         
-        narrative = response.choices[0].message.content
+        narrative = response["choices"][0]["message"]["content"]
         return jsonify({"narrative": narrative})
     
-    except openai.error.OpenAIError as e:
+    except openai.error.RateLimitError:
+        return jsonify({"error": "You have exceeded your quota. Please check your OpenAI account."}), 429
+    except openai.error.AuthenticationError:
+        return jsonify({"error": "Invalid API key. Please check your OpenAI account."}), 401
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/analyze-evidence", methods=["POST"])
@@ -110,10 +123,14 @@ def analyze_evidence():
             ]
         )
 
-        analysis = response.choices[0].message.content
+        analysis = response["choices"][0]["message"]["content"]
         return jsonify({"analysis": analysis})
     
-    except openai.error.OpenAIError as e:
+    except openai.error.RateLimitError:
+        return jsonify({"error": "You have exceeded your quota. Please check your OpenAI account."}), 429
+    except openai.error.AuthenticationError:
+        return jsonify({"error": "Invalid API key. Please check your OpenAI account."}), 401
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
