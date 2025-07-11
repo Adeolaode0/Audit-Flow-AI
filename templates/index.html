@@ -4,55 +4,75 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audit Flow AI</title>
+    <!-- Link to CSS -->
+    <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-    <h1>Audit Flow AI</h1>
-    
-    <section>
-        <h2>Explain Control Description</h2>
-        <textarea id="control-description" rows="5" cols="50" placeholder="Paste control description here..."></textarea><br>
-        <button onclick="explainControl()">Explain</button>
-        <p id="explanation-result"></p>
-    </section>
-    
-    <section>
-        <h2>Rewrite Walkthrough Discussion</h2>
-        <textarea id="walkthrough-discussion" rows="5" cols="50" placeholder="Paste walkthrough discussion here..."></textarea><br>
-        <button onclick="rewriteWalkthrough()">Rewrite</button>
-        <p id="rewrite-result"></p>
-    </section>
-
-    <section>
-        <button onclick="goToTesting()">Go to Testing Page</button>
-    </section>
-    
+    <nav class="navbar">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Audit Flow AI</a>
+            <button id="testButton" class="btn btn-primary">Go to Testing Page</button>
+        </div>
+    </nav>
+    <div class="container">
+        <h1 class="text-center">Welcome to Audit Flow AI</h1>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Explain Control Description</h5>
+                        <textarea id="controlDescription" class="form-control mb-3" rows="4" placeholder="Enter control description..."></textarea>
+                        <button id="explainButton" class="btn btn-primary">Explain</button>
+                        <div id="explanationResult"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Rewrite Walkthrough Discussion</h5>
+                        <textarea id="walkthroughDiscussion" class="form-control mb-3" rows="4" placeholder="Enter walkthrough discussion..."></textarea>
+                        <button id="rewriteButton" class="btn btn-primary">Rewrite</button>
+                        <div id="rewriteResult"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <script>
-        async function explainControl() {
-            const controlDescription = document.getElementById("control-description").value;
+        // Navigate to the testing page
+        document.getElementById("testButton").addEventListener("click", () => {
+            window.location.href = "/testing";
+        });
+
+        // Explain Control Description
+        document.getElementById("explainButton").addEventListener("click", async () => {
+            const controlDescription = document.getElementById("controlDescription").value;
             const response = await fetch("/api/explain", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json"
+                },
                 body: JSON.stringify({ control_description: controlDescription })
             });
-            const result = await response.json();
-            document.getElementById("explanation-result").innerText = result.explanation || result.error;
-        }
-    
-        async function rewriteWalkthrough() {
-            const controlDescription = document.getElementById("control-description").value;
-            const walkthroughDiscussion = document.getElementById("walkthrough-discussion").value;
+            const data = await response.json();
+            document.getElementById("explanationResult").innerHTML = `<div class="alert alert-info">${data.explanation}</div>`;
+        });
+
+        // Rewrite Walkthrough Discussion
+        document.getElementById("rewriteButton").addEventListener("click", async () => {
+            const controlDescription = document.getElementById("controlDescription").value; // Use the initial control description
+            const walkthroughDiscussion = document.getElementById("walkthroughDiscussion").value;
             const response = await fetch("/api/rewrite-walkthrough", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json"
+                },
                 body: JSON.stringify({ control_description: controlDescription, walkthrough_discussion: walkthroughDiscussion })
             });
-            const result = await response.json();
-            document.getElementById("rewrite-result").innerText = result.narrative || result.error;
-        }
-
-        function goToTesting() {
-            window.location.href = "/testing";
-        }
+            const data = await response.json();
+            document.getElementById("rewriteResult").innerHTML = `<div class="alert alert-info">${data.narrative}</div>`;
+        });
     </script>
 </body>
 </html>
