@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Flow AI</title>
+    <!-- Link to CSS -->
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">Audit Flow AI</a>
+            <button id="testButton" class="btn btn-primary">Go to Testing Page</button>
+        </div>
+    </nav>
+    <div class="container">
+        <h1 class="text-center">Welcome to Audit Flow AI</h1>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Explain Control Description</h5>
+                        <textarea id="controlDescription" class="form-control mb-3" rows="4" placeholder="Enter control description..."></textarea>
+                        <button id="explainButton" class="btn btn-primary">Explain</button>
+                        <div id="explanationResult" class="mt-3">
+                            <p id="explanation-output"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Rewrite Walkthrough Discussion</h5>
+                        <textarea id="walkthroughDiscussion" class="form-control mb-3" rows="4" placeholder="Enter walkthrough discussion..."></textarea>
+                        <button id="rewriteButton" class="btn btn-primary">Rewrite</button>
+                        <div id="rewriteResult" class="mt-3">
+                            <p id="rewrite-output"></p>
+                            <button class="btn btn-secondary" onclick="copyText('rewrite-output')">Copy Narrative</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="toast" class="toast"></div>
+    <div id="spinner" class="spinner"></div>
+    <script>
+        // Navigate to the testing page
+        document.getElementById("testButton").addEventListener("click", () => {
+            window.location.href = "/testing";
+        });
+
+        // Explain Control Description
+        document.getElementById("explainButton").addEventListener("click", async () => {
+            showSpinner();
+            const controlDescription = document.getElementById("controlDescription").value;
+            const response = await fetch("/api/explain", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ control_description: controlDescription })
+            });
+            const data = await response.json();
+            document.getElementById("explanation-output").innerText = data.explanation;
+            hideSpinner();
+            showToast("Explanation ready!");
+        });
+
+        // Rewrite Walkthrough Discussion
+        document.getElementById("rewriteButton").addEventListener("click", async () => {
+            showSpinner();
+            const controlDescription = document.getElementById("controlDescription").value;
+            const walkthroughDiscussion = document.getElementById("walkthroughDiscussion").value;
+            const response = await fetch("/api/rewrite-walkthrough", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ control_description: controlDescription, walkthrough_discussion: walkthroughDiscussion })
+            });
+            const data = await response.json();
+            document.getElementById("rewrite-output").innerText = data.narrative;
+            hideSpinner();
+            showToast("Walkthrough rewritten!");
+        });
+
+        // Copy to Clipboard Functionality
+        function copyText(id) {
+            const text = document.getElementById(id).innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Copied!');
+            });
+        }
+
+        // Toast Notification
+        function showToast(message) {
+            const toast = document.getElementById("toast");
+            toast.innerText = message;
+            toast.classList.add("show");
+            setTimeout(() => {
+                toast.classList.remove("show");
+            }, 3000);
+        }
+
+        // Spinner
+        function showSpinner() {
+            document.getElementById("spinner").style.display = "block";
+        }
+
+        function hideSpinner() {
+            document.getElementById("spinner").style.display = "none";
+        }
+    </script>
+</body>
+</html>
