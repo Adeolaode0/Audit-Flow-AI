@@ -11,7 +11,6 @@
     <nav class="navbar">
         <div class="container-fluid">
             <a class="navbar-brand" href="/">Audit Flow AI</a>
-            <button id="testButton" class="btn btn-primary">Go to Testing Page</button>
         </div>
     </nav>
     <div class="container">
@@ -74,11 +73,6 @@
     <div id="spinner" class="spinner"></div>
     
     <script>
-        // Navigate to the testing page
-        document.getElementById("testButton").addEventListener("click", () => {
-            window.location.href = "/testing";
-        });
-
         // Save data to localStorage and go to testing page
         document.getElementById("saveAndGoButton").addEventListener("click", () => {
             const controlObjective = document.getElementById("controlObjective").value;
