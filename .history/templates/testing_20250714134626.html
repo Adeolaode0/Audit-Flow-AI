@@ -92,11 +92,6 @@
                     <label class="form-label"><strong>Overall Rationale</strong></label>
                     <textarea id="overallRationale" class="form-control" rows="8" readonly placeholder="Overall rationale will appear here after generating..."></textarea>
                 </div>
-                <!-- Rationale Action Buttons -->
-                <div id="rationaleActions" class="mb-3" style="display: none;">
-                    <button id="copyRationaleButton" class="btn btn-info me-2">Copy to Clipboard</button>
-                    <button id="downloadPdfButton" class="btn btn-success">Download Report</button>
-                </div>
                 <div id="overallVerdictSection" class="mt-3" style="display: none;">
                     <h6>Overall Test Result:</h6>
                     <p id="overallVerdict" class="text-center font-weight-bold"></p>
@@ -132,194 +127,7 @@
             window.location.href = "/";
         });
 
-        // Function to copy rationale to clipboard
-        function copyRationaleToClipboard() {
-            const rationaleText = document.getElementById("overallRationale").value;
-            if (!rationaleText) {
-                alert("No rationale to copy.");
-                return;
-            }
-            
-            navigator.clipboard.writeText(rationaleText).then(() => {
-                const copyButton = document.getElementById("copyRationaleButton");
-                const originalText = copyButton.textContent;
-                copyButton.textContent = "Copied!";
-                copyButton.classList.remove("btn-info");
-                copyButton.classList.add("btn-success");
-                
-                setTimeout(() => {
-                    copyButton.textContent = originalText;
-                    copyButton.classList.remove("btn-success");
-                    copyButton.classList.add("btn-info");
-                }, 2000);
-            }).catch(err => {
-                alert("Failed to copy to clipboard: " + err.message);
-            });
-        }
-
-        // Function to download rationale as report (text file for now)
-        async function downloadRationalePDF() {
-            const rationaleText = document.getElementById("overallRationale").value;
-            const overallVerdict = document.getElementById("overallVerdict").innerText;
-            const controlDescription = document.getElementById("controlDescriptionDisplay").innerText;
-            const walkthroughDiscussion = document.getElementById("walkthroughDiscussionDisplay").innerText;
-            
-            if (!rationaleText) {
-                alert("No rationale to download.");
-                return;
-            }
-            
-            // Collect test attribute data for the report
-            const testAttributes = document.querySelectorAll(".test-attribute");
-            let attributesData = [];
-            
-            testAttributes.forEach((attribute, index) => {
-                const testScript = attribute.querySelector(".testScript").value.trim();
-                const evidenceSummary = attribute.querySelector(".evidenceSummary").value.trim();
-                const analysisNarrative = attribute.querySelector(".analysisNarrative").value.trim();
-                const verdictElement = attribute.querySelector(".verdict");
-                const verdictText = verdictElement.innerText.trim();
-                
-                if (testScript && analysisNarrative && verdictText.includes("Final Verdict:")) {
-                    const verdict = verdictText.includes("Pass") ? "Pass" : "Fail";
-                    attributesData.push({
-                        index: index + 1,
-                        testScript: testScript,
-                        evidenceSummary: evidenceSummary,
-                        analysisNarrative: analysisNarrative,
-                        verdict: verdict
-                    });
-                }
-            });
-            
-            const downloadButton = document.getElementById("downloadPdfButton");
-            downloadButton.disabled = true;
-            downloadButton.textContent = "Generating Report...";
-            
-            try {
-                // Create a comprehensive text report
-                const reportContent = `
-AUDIT TEST REPORT
-Generated: ${new Date().toLocaleString()}
-=========================================
-
-CONTROL DESCRIPTION:
-${controlDescription}
-
-WALKTHROUGH DISCUSSION:
-${walkthroughDiscussion}
-
-TEST ATTRIBUTES ANALYSIS:
-=========================================
-
-${attributesData.map(attr => `
-ATTRIBUTE ${attr.index}:
-------------------
-Test Script: ${attr.testScript}
-
-Evidence Summary: ${attr.evidenceSummary}
-
-Analysis Narrative: ${attr.analysisNarrative}
-
-Verdict: ${attr.verdict}
-
-`).join('\n')}
-
-OVERALL CONCLUSION:
-=========================================
-
-${rationaleText}
-
-FINAL VERDICT:
-${overallVerdict}
-
-=========================================
-Report generated by Audit Flow AI
-                `;
-                
-                // Create and download text file
-                const blob = new Blob([reportContent], { type: 'text/plain' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `Audit_Test_Report_${new Date().toISOString().split('T')[0]}.txt`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-                
-            } catch (error) {
-                alert("Error generating report: " + error.message);
-            } finally {
-                downloadButton.disabled = false;
-                downloadButton.textContent = "Download Report";
-            }
-        }
-
-        // Client-side rationale generation function (no API required)
-        function generateClientSideRationale(attributesData, overallResult, controlDescription, walkthroughDiscussion, hasFailures) {
-            const failedAttributes = attributesData.filter(attr => attr.verdict === "Fail");
-            const passedAttributes = attributesData.filter(attr => attr.verdict === "Pass");
-            
-            let rationale = `OVERALL TEST CONCLUSION: ${overallResult}\n\n`;
-            
-            rationale += `CONTROL ASSESSMENT:\n`;
-            rationale += `Based on our comprehensive testing of the control "${controlDescription.substring(0, 200)}${controlDescription.length > 200 ? '...' : ''}", `;
-            
-            if (overallResult === "FAIL") {
-                rationale += `we conclude that the control is NOT operating effectively. `;
-                rationale += `Our testing revealed that ${failedAttributes.length} out of ${attributesData.length} test attributes failed, `;
-                rationale += `which indicates significant deficiencies in the control operation that prevent us from relying on this control.\n\n`;
-                
-                rationale += `FAILED ATTRIBUTES ANALYSIS:\n`;
-                failedAttributes.forEach(attr => {
-                    rationale += `• Attribute ${attr.index} - FAILED:\n`;
-                    rationale += `  Test Focus: ${attr.testScript.substring(0, 150)}${attr.testScript.length > 150 ? '...' : ''}\n`;
-                    rationale += `  Key Finding: ${attr.analysisNarrative.substring(0, 200)}${attr.analysisNarrative.length > 200 ? '...' : ''}\n`;
-                    rationale += `  Impact: This failure indicates a breakdown in the control process that compromises the control objective.\n\n`;
-                });
-                
-                if (passedAttributes.length > 0) {
-                    rationale += `PASSED ATTRIBUTES:\n`;
-                    rationale += `While ${passedAttributes.length} attribute(s) did pass testing, the presence of any failed attributes requires an overall FAIL conclusion as all control components must function effectively.\n\n`;
-                }
-            } else {
-                rationale += `we conclude that the control IS operating effectively. `;
-                rationale += `Our testing successfully validated all ${attributesData.length} test attributes, demonstrating consistent and reliable control operation across all tested scenarios.\n\n`;
-                
-                rationale += `SUCCESSFUL ATTRIBUTES ANALYSIS:\n`;
-                passedAttributes.forEach(attr => {
-                    rationale += `• Attribute ${attr.index} - PASSED:\n`;
-                    rationale += `  Test Focus: ${attr.testScript.substring(0, 150)}${attr.testScript.length > 150 ? '...' : ''}\n`;
-                    rationale += `  Validation: ${attr.analysisNarrative.substring(0, 200)}${attr.analysisNarrative.length > 200 ? '...' : ''}\n`;
-                    rationale += `  Result: Evidence supports effective control operation for this attribute.\n\n`;
-                });
-            }
-            
-            rationale += `PROFESSIONAL AUDIT OPINION:\n`;
-            rationale += `Based on the evidence reviewed, analysis performed, and testing procedures executed, the control `;
-            if (overallResult === "PASS") {
-                rationale += `can be relied upon to achieve its intended control objective. The control demonstrates:\n`;
-                rationale += `• Consistent operation across all tested scenarios\n`;
-                rationale += `• Adequate design to address the identified risks\n`;
-                rationale += `• Effective implementation in the control environment\n`;
-                rationale += `• Reliable evidence of control performance\n\n`;
-                rationale += `We have no exceptions to report and consider this control to be operating effectively.`;
-            } else {
-                rationale += `cannot be relied upon to achieve its intended control objective. The identified deficiencies include:\n`;
-                rationale += `• Failed control components that compromise overall effectiveness\n`;
-                rationale += `• Inadequate control performance in critical areas\n`;
-                rationale += `• Evidence of control breakdowns or exceptions\n`;
-                rationale += `• Risk that control objectives may not be met\n\n`;
-                rationale += `This represents a control deficiency that requires management attention and remediation.`;
-            }
-            
-            rationale += `\n\nTesting completed on ${new Date().toLocaleDateString()} by Audit Flow AI.`;
-            
-            return rationale;
-        }
-
-        // Function to generate overall rationale based on all test attributes - FIXED VERSION
+        // Function to generate overall rationale based on all test attributes
         async function generateOverallRationale() {
             const testAttributes = document.querySelectorAll(".test-attribute");
             const controlDescription = document.getElementById("controlDescriptionDisplay").innerText;
@@ -374,41 +182,87 @@ Report generated by Audit Flow AI
             // Determine overall result
             const overallResult = hasFailures ? "FAIL" : "PASS";
             
+            // Prepare data for API call
+            const formData = new FormData();
+            formData.append("control_description", controlDescription);
+            formData.append("walkthrough_discussion", walkthroughDiscussion);
+            formData.append("overall_result", overallResult);
+            formData.append("attributes_data", JSON.stringify(attributesData));
+            
+            // Create comprehensive instructions for overall rationale
+            const rationaleInstructions = `
+You are a professional auditor preparing the overall conclusion for a control test. Based on the individual test attribute results, generate a comprehensive rationale supporting the overall conclusion.
+
+**OVERALL TEST RESULT: ${overallResult}**
+
+**CONTEXT:**
+- Control Description: ${controlDescription}
+- Walkthrough Discussion: ${walkthroughDiscussion}
+
+**TEST ATTRIBUTES SUMMARY:**
+${attributesData.map(attr => `
+Attribute ${attr.index}:
+- Test Script: ${attr.testScript}
+- Evidence Summary: ${attr.evidenceSummary}
+- Analysis: ${attr.analysisNarrative}
+- Verdict: ${attr.verdict}
+`).join('\n')}
+
+**RATIONALE REQUIREMENTS:**
+1. **Overall Conclusion**: Start with clear statement of ${overallResult}
+2. **Supporting Logic**: ${hasFailures ? 
+   "Since one or more test attributes failed, the overall control test must FAIL. Explain which attributes failed and why this impacts the overall control effectiveness." : 
+   "Since all test attributes passed, explain how this supports overall control effectiveness."}
+3. **Individual Attribute Analysis**: Summarize findings from each test attribute
+4. **Control Effectiveness Assessment**: Relate findings back to the control description and objectives
+5. **Professional Conclusion**: Provide clear audit opinion on control operation
+
+**OUTPUT FORMAT:**
+Generate a professional audit rationale that:
+- States the overall conclusion clearly (${overallResult})
+- Summarizes key findings from each test attribute
+- Explains the basis for the overall conclusion
+- Relates findings to control objectives
+- Uses professional audit language
+- Provides sufficient detail to support the conclusion
+
+**Remember: If ANY attribute failed, the overall test must FAIL regardless of other attributes passing.**
+            `;
+            
+            formData.append("rationale_instructions", rationaleInstructions);
+            
             // Show loading state
             const generateButton = document.getElementById("generateRationaleButton");
             generateButton.disabled = true;
             generateButton.textContent = "Generating Rationale...";
             
             try {
-                // Generate rationale using client-side function (no API call needed)
-                const rationaleText = generateClientSideRationale(
-                    attributesData, 
-                    overallResult, 
-                    controlDescription, 
-                    walkthroughDiscussion, 
-                    hasFailures
-                );
+                const response = await fetch("/api/generate-rationale", {
+                    method: "POST",
+                    body: formData
+                });
                 
-                document.getElementById("overallRationale").value = rationaleText;
+                const data = await response.json();
                 
-                // Show overall verdict
-                const overallVerdictElement = document.getElementById("overallVerdict");
-                const overallVerdictSection = document.getElementById("overallVerdictSection");
-                
-                if (overallResult === "PASS") {
-                    overallVerdictElement.innerHTML = `Overall Test Result: <span class="badge bg-success fs-5">PASS</span>`;
+                if (data.rationale) {
+                    document.getElementById("overallRationale").value = data.rationale;
+                    
+                    // Show overall verdict
+                    const overallVerdictElement = document.getElementById("overallVerdict");
+                    const overallVerdictSection = document.getElementById("overallVerdictSection");
+                    
+                    if (overallResult === "PASS") {
+                        overallVerdictElement.innerHTML = `Overall Test Result: <span class="badge bg-success fs-5">PASS</span>`;
+                    } else {
+                        overallVerdictElement.innerHTML = `Overall Test Result: <span class="badge bg-danger fs-5">FAIL</span>`;
+                    }
+                    
+                    overallVerdictSection.style.display = "block";
                 } else {
-                    overallVerdictElement.innerHTML = `Overall Test Result: <span class="badge bg-danger fs-5">FAIL</span>`;
+                    alert(data.error || "Failed to generate overall rationale.");
                 }
-                
-                overallVerdictSection.style.display = "block";
-                
-                // Show the action buttons
-                document.getElementById("rationaleActions").style.display = "block";
-                
             } catch (error) {
-                console.error("Error generating rationale:", error);
-                alert("Error generating rationale: " + error.message);
+                alert("Error: " + error.message);
             } finally {
                 // Reset button state
                 generateButton.disabled = false;
@@ -599,10 +453,6 @@ Generate a focused audit narrative that:
                 event.preventDefault();
                 await generateOverallRationale();
             });
-
-            // Add event listeners for copy and download buttons
-            document.getElementById("copyRationaleButton").addEventListener("click", copyRationaleToClipboard);
-            document.getElementById("downloadPdfButton").addEventListener("click", downloadRationalePDF);
         });
 
         // Add Another Test Attribute
