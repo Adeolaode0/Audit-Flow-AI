@@ -49,6 +49,7 @@
                 <!-- Action Buttons -->
                 <div class="mb-3">
                     <button id="saveAndGoButton" class="btn btn-success me-2">Save & Go to Testing</button>
+                    <button id="explainButton" class="btn btn-info me-2">Explain Control</button>
                     <button id="rewriteButton" class="btn btn-warning">Rewrite Walkthrough</button>
                 </div>
             </div>
@@ -56,7 +57,18 @@
         
         <!-- Results Section -->
         <div class="row">
-            <div class="col-md-12">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Control Explanation</h5>
+                        <div id="explanationResult" class="mt-3">
+                            <p id="explanation-output" class="text-muted">Click "Explain Control" to get a simplified explanation...</p>
+                            <button class="btn btn-secondary" onclick="copyText('explanation-output')" style="display:none;" id="copyExplanationBtn">Copy Explanation</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title">Rewritten Walkthrough</h5>
@@ -106,6 +118,44 @@
             setTimeout(() => {
                 window.location.href = "/testing";
             }, 1500);
+        });
+
+        // Explain Control Description
+        document.getElementById("explainButton").addEventListener("click", async () => {
+            const controlDescription = document.getElementById("controlDescription").value;
+            if (!controlDescription.trim()) {
+                alert("Please enter a control description first.");
+                return;
+            }
+            
+            showSpinner();
+            try {
+                const response = await fetch("/api/explain", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ control_description: controlDescription })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.explanation) {
+                    document.getElementById("explanation-output").innerText = data.explanation;
+                    document.getElementById("copyExplanationBtn").style.display = "inline-block";
+                    showToast("Explanation ready!");
+                } else {
+                    alert("Error: " + (data.error || "Failed to explain control"));
+                }
+            } catch (error) {
+                alert("Error: " + error.message);
+            } finally {
+                hideSpinner();
+            }
         });
 
         // Rewrite Walkthrough Discussion
@@ -170,7 +220,7 @@
         // Copy to Clipboard Functionality
         function copyText(id) {
             const text = document.getElementById(id).innerText;
-            if (text && text !== "Click \"Rewrite Walkthrough\" to get a clean narrative...") {
+            if (text && text !== "Click \"Explain Control\" to get a simplified explanation..." && text !== "Click \"Rewrite Walkthrough\" to get a clean narrative...") {
                 navigator.clipboard.writeText(text).then(() => {
                     showToast('Copied to clipboard!');
                 }).catch(() => {

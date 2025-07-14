@@ -48,7 +48,8 @@
                 
                 <!-- Action Buttons -->
                 <div class="mb-3">
-                    <button id="saveAndGoButton" class="btn btn-success me-2">Save & Go to Testing</button>
+                    <button id="saveButton" class="btn btn-success me-2">Save Control Objective</button>
+                    <button id="explainButton" class="btn btn-info me-2">Explain Control</button>
                     <button id="rewriteButton" class="btn btn-warning">Rewrite Walkthrough</button>
                 </div>
             </div>
@@ -56,7 +57,18 @@
         
         <!-- Results Section -->
         <div class="row">
-            <div class="col-md-12">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Control Explanation</h5>
+                        <div id="explanationResult" class="mt-3">
+                            <p id="explanation-output" class="text-muted">Click "Explain Control" to get a simplified explanation...</p>
+                            <button class="btn btn-secondary" onclick="copyText('explanation-output')" style="display:none;" id="copyExplanationBtn">Copy Explanation</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title">Rewritten Walkthrough</h5>
@@ -79,33 +91,98 @@
             window.location.href = "/testing";
         });
 
-        // Save data to localStorage and go to testing page
-        document.getElementById("saveAndGoButton").addEventListener("click", () => {
+        // Save Control Objective with better error handling
+        document.getElementById("saveButton").addEventListener("click", async () => {
+            showSpinner();
             const controlObjective = document.getElementById("controlObjective").value;
             const riskStatement = document.getElementById("riskStatement").value;
             const controlDescription = document.getElementById("controlDescription").value;
             const walkthroughDiscussion = document.getElementById("walkthroughDiscussion").value;
             
             if (!controlObjective || !riskStatement || !controlDescription) {
-                alert("Please fill in Control Objective, Risk Statement, and Control Description before proceeding.");
+                hideSpinner();
+                alert("Please fill in Control Objective, Risk Statement, and Control Description before saving.");
                 return;
             }
             
-            // Save data to localStorage (client-side storage)
-            localStorage.setItem("auditData", JSON.stringify({
-                control_objective: controlObjective,
-                risk_statement: riskStatement,
-                control_description: controlDescription,
-                walkthrough_discussion: walkthroughDiscussion,
-                timestamp: new Date().toISOString()
-            }));
+            try {
+                const response = await fetch("/api/save-control-objective", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ 
+                        control_objective: controlObjective,
+                        risk_statement: riskStatement,
+                        control_description: controlDescription,
+                        walkthrough_discussion: walkthroughDiscussion
+                    })
+                });
+                
+                // Check if response is ok
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                // Check if response is JSON
+                const contentType = response.headers.get("content-type");
+                if (!contentType || !contentType.includes("application/json")) {
+                    const text = await response.text();
+                    console.error("Non-JSON response:", text);
+                    throw new Error("Server returned non-JSON response");
+                }
+                
+                const data = await response.json();
+                hideSpinner();
+                
+                if (data.error) {
+                    alert("Error: " + data.error);
+                } else {
+                    showToast("Control objective saved successfully!");
+                }
+            } catch (error) {
+                hideSpinner();
+                console.error("Save error:", error);
+                alert("Error saving control objective: " + error.message);
+            }
+        });
+
+        // Explain Control Description
+        document.getElementById("explainButton").addEventListener("click", async () => {
+            const controlDescription = document.getElementById("controlDescription").value;
+            if (!controlDescription.trim()) {
+                alert("Please enter a control description first.");
+                return;
+            }
             
-            showToast("Data saved! Redirecting to testing page...");
-            
-            // Navigate to testing page after a short delay
-            setTimeout(() => {
-                window.location.href = "/testing";
-            }, 1500);
+            showSpinner();
+            try {
+                const response = await fetch("/api/explain", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ control_description: controlDescription })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.explanation) {
+                    document.getElementById("explanation-output").innerText = data.explanation;
+                    document.getElementById("copyExplanationBtn").style.display = "inline-block";
+                    showToast("Explanation ready!");
+                } else {
+                    alert("Error: " + (data.error || "Failed to explain control"));
+                }
+            } catch (error) {
+                alert("Error: " + error.message);
+            } finally {
+                hideSpinner();
+            }
         });
 
         // Rewrite Walkthrough Discussion
@@ -151,26 +228,10 @@
             }
         });
 
-        // Load saved data on page load
-        window.addEventListener("load", () => {
-            const savedData = localStorage.getItem("auditData");
-            if (savedData) {
-                try {
-                    const data = JSON.parse(savedData);
-                    document.getElementById("controlObjective").value = data.control_objective || "";
-                    document.getElementById("riskStatement").value = data.risk_statement || "";
-                    document.getElementById("controlDescription").value = data.control_description || "";
-                    document.getElementById("walkthroughDiscussion").value = data.walkthrough_discussion || "";
-                } catch (error) {
-                    console.error("Error loading saved data:", error);
-                }
-            }
-        });
-
         // Copy to Clipboard Functionality
         function copyText(id) {
             const text = document.getElementById(id).innerText;
-            if (text && text !== "Click \"Rewrite Walkthrough\" to get a clean narrative...") {
+            if (text && text !== "Click \"Explain Control\" to get a simplified explanation..." && text !== "Click \"Rewrite Walkthrough\" to get a clean narrative...") {
                 navigator.clipboard.writeText(text).then(() => {
                     showToast('Copied to clipboard!');
                 }).catch(() => {
