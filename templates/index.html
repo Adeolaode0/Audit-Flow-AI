@@ -1,198 +1,420 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audit Flow AI</title>
-    <!-- Link to CSS -->
-    <link rel="stylesheet" href="/static/styles.css">
-</head>
-<body>
-    <nav class="navbar">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/">Audit Flow AI</a>
-        </div>
-    </nav>
-    <div class="container">
-        <h1 class="text-center">Welcome to Audit Flow AI</h1>
-        
-        <!-- Main Audit Form -->
-        <div class="card mb-4">
-            <div class="card-body">
-                <h5 class="card-title">Control Objective & Risk Assessment</h5>
-                
-                <!-- Control Objective -->
-                <div class="mb-3">
-                    <label for="controlObjective" class="form-label">Control Objective</label>
-                    <textarea id="controlObjective" class="form-control" rows="3" placeholder="Enter the control objective..."></textarea>
-                </div>
-                
-                <!-- Risk Statement -->
-                <div class="mb-3">
-                    <label for="riskStatement" class="form-label">Risk Statement</label>
-                    <textarea id="riskStatement" class="form-control" rows="3" placeholder="Enter the risk statement..."></textarea>
-                </div>
-                
-                <!-- Control Description -->
-                <div class="mb-3">
-                    <label for="controlDescription" class="form-label">Control Description</label>
-                    <textarea id="controlDescription" class="form-control" rows="4" placeholder="Enter control description..."></textarea>
-                </div>
-                
-                <!-- Walkthrough Discussion -->
-                <div class="mb-3">
-                    <label for="walkthroughDiscussion" class="form-label">Walkthrough Discussion</label>
-                    <textarea id="walkthroughDiscussion" class="form-control" rows="4" placeholder="Enter walkthrough discussion..."></textarea>
-                </div>
-                
-                <!-- Action Buttons -->
-                <div class="mb-3">
-                    <button id="saveAndGoButton" class="btn btn-success me-2">Save & Go to Testing</button>
-                    <button id="rewriteButton" class="btn btn-warning">Rewrite Walkthrough</button>
-                </div>
+{% extends "base.html" %}
+
+{% block title %}Audit Flow AI - Main Form{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Page Header -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Audit Flow AI</h1>
+        <p class="text-gray-600">Professional audit documentation assistant powered by AI</p>
+    </div>
+
+    <!-- Main Form -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <form id="auditForm" class="space-y-6">
+            <!-- Control Objective -->
+            <div>
+                <label for="control_objective" class="block text-sm font-medium text-gray-700 mb-2">
+                    Control Objective *
+                </label>
+                <textarea 
+                    id="control_objective" 
+                    name="control_objective" 
+                    rows="3" 
+                    required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-audit-blue focus:border-audit-blue transition-colors duration-200"
+                    placeholder="What is this control designed to achieve? What business objective does it support?"
+                ></textarea>
             </div>
-        </div>
-        
+
+            <!-- Risk Statement -->
+            <div>
+                <label for="risk_statement" class="block text-sm font-medium text-gray-700 mb-2">
+                    Risk Statement *
+                </label>
+                <textarea 
+                    id="risk_statement" 
+                    name="risk_statement" 
+                    rows="3" 
+                    required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-audit-blue focus:border-audit-blue transition-colors duration-200"
+                    placeholder="What risk does this control mitigate? What could go wrong without this control?"
+                ></textarea>
+            </div>
+
+            <!-- Control Description -->
+            <div>
+                <label for="control_description" class="block text-sm font-medium text-gray-700 mb-2">
+                    Control Description *
+                </label>
+                <textarea 
+                    id="control_description" 
+                    name="control_description" 
+                    rows="4" 
+                    required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-audit-blue focus:border-audit-blue transition-colors duration-200"
+                    placeholder="Describe the control process, procedures, and mechanisms..."
+                ></textarea>
+            </div>
+
+            <!-- Walkthrough Discussion -->
+            <div>
+                <label for="walkthrough_discussion" class="block text-sm font-medium text-gray-700 mb-2">
+                    Walkthrough Discussion
+                </label>
+                <textarea 
+                    id="walkthrough_discussion" 
+                    name="walkthrough_discussion" 
+                    rows="6" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-audit-blue focus:border-audit-blue transition-colors duration-200"
+                    placeholder="Document the walkthrough discussion, including process steps, personnel involved, systems used, and observations..."
+                ></textarea>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4">
+                <button 
+                    type="button" 
+                    id="saveAndGoButton"
+                    class="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                >
+                    💾 Save & Go to Testing
+                </button>
+                
+                <button 
+                    type="button" 
+                    id="rewriteBtn"
+                    class="flex-1 bg-audit-blue hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                >
+                    ✨ Rewrite Walkthrough
+                </button>
+                
+                <button 
+                    type="button" 
+                    id="clearBtn"
+                    class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-6 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                >
+                    🗑️ Clear All
+                </button>
+            </div>
+        </form>
+
         <!-- Results Section -->
-        <div class="row">
-            <div class="col-md-12">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Rewritten Walkthrough</h5>
-                        <div id="rewriteResult" class="mt-3">
-                            <p id="rewrite-output" class="text-muted">Click "Rewrite Walkthrough" to get a clean narrative...</p>
-                            <button class="btn btn-secondary" onclick="copyText('rewrite-output')" style="display:none;" id="copyNarrativeBtn">Copy Narrative</button>
-                        </div>
-                    </div>
+        <div id="results" class="mt-8 space-y-6 hidden">
+            <!-- Rewrite Result -->
+            <div id="rewriteResult" class="bg-blue-50 border border-blue-200 rounded-lg p-6 hidden">
+                <h3 class="text-lg font-semibold text-blue-800 mb-3">✨ Rewritten Walkthrough</h3>
+                <div id="rewriteContent" class="text-blue-700 whitespace-pre-wrap"></div>
+                <button 
+                    id="copyRewriteBtn" 
+                    class="mt-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded-md transition-colors duration-200"
+                >
+                    📋 Copy to Clipboard
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loading" class="hidden mt-8 text-center">
+            <div class="inline-flex items-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-audit-blue bg-white transition ease-in-out duration-150">
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-audit-blue" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing...
+            </div>
+        </div>
+
+        <!-- Error Display -->
+        <div id="error" class="hidden mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-red-800">Error</h3>
+                    <div id="errorContent" class="mt-2 text-sm text-red-700"></div>
                 </div>
             </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div id="toast" class="hidden fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300">
+            <span id="toastMessage"></span>
         </div>
     </div>
+
+    <!-- Quick Navigation -->
+    <div class="mt-8 bg-gray-50 rounded-lg p-6 border border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Navigation</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <a href="/testing" class="block p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow duration-200">
+                <h4 class="font-medium text-gray-900">🧪 Evidence Testing</h4>
+                <p class="text-sm text-gray-600 mt-1">Upload and analyze audit evidence files</p>
+            </a>
+            <a href="/api/health" target="_blank" class="block p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow duration-200">
+                <h4 class="font-medium text-gray-900">🏥 API Health Check</h4>
+                <p class="text-sm text-gray-600 mt-1">Verify OpenAI API connection status</p>
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+// Get DOM elements
+const controlObjectiveTextarea = document.getElementById("control_objective");
+const riskStatementTextarea = document.getElementById("risk_statement");
+const controlDescriptionTextarea = document.getElementById("control_description");
+const walkthroughDiscussionTextarea = document.getElementById("walkthrough_discussion");
+const saveAndGoButton = document.getElementById("saveAndGoButton");
+const rewriteBtn = document.getElementById("rewriteBtn");
+const clearBtn = document.getElementById("clearBtn");
+const copyRewriteBtn = document.getElementById("copyRewriteBtn");
+const loading = document.getElementById("loading");
+const error = document.getElementById("error");
+const results = document.getElementById("results");
+const rewriteResult = document.getElementById("rewriteResult");
+const rewriteContent = document.getElementById("rewriteContent");
+const errorContent = document.getElementById("errorContent");
+const toast = document.getElementById("toast");
+const toastMessage = document.getElementById("toastMessage");
+
+// Load data from localStorage on page load
+window.addEventListener("load", () => {
+    const savedData = localStorage.getItem("auditData");
+    if (savedData) {
+        try {
+            const data = JSON.parse(savedData);
+            controlObjectiveTextarea.value = data.control_objective || "";
+            riskStatementTextarea.value = data.risk_statement || "";
+            controlDescriptionTextarea.value = data.control_description || "";
+            walkthroughDiscussionTextarea.value = data.walkthrough_discussion || "";
+            console.log("✅ Loaded saved data from localStorage");
+        } catch (error) {
+            console.error("❌ Error loading saved data:", error);
+        }
+    }
+});
+
+// Save data to localStorage on change
+function saveData() {
+    const data = {
+        control_objective: controlObjectiveTextarea.value,
+        risk_statement: riskStatementTextarea.value,
+        control_description: controlDescriptionTextarea.value,
+        walkthrough_discussion: walkthroughDiscussionTextarea.value,
+        timestamp: new Date().toISOString()
+    };
+    localStorage.setItem("auditData", JSON.stringify(data));
+    console.log("💾 Saved data to localStorage");
+}
+
+// Add event listeners for auto-save
+controlObjectiveTextarea.addEventListener("input", saveData);
+riskStatementTextarea.addEventListener("input", saveData);
+controlDescriptionTextarea.addEventListener("input", saveData);
+walkthroughDiscussionTextarea.addEventListener("input", saveData);
+
+// Helper functions
+function showElement(element) {
+    element.classList.remove("hidden");
+}
+
+function hideElement(element) {
+    element.classList.add("hidden");
+}
+
+function showToast(message) {
+    toastMessage.textContent = message;
+    showElement(toast);
+    setTimeout(() => {
+        hideElement(toast);
+    }, 3000);
+}
+
+function showError(message) {
+    errorContent.textContent = message;
+    showElement(error);
+    hideElement(loading);
+}
+
+function hideError() {
+    hideElement(error);
+}
+
+// Save and Go to Testing functionality
+saveAndGoButton.addEventListener("click", () => {
+    const controlObjective = controlObjectiveTextarea.value.trim();
+    const riskStatement = riskStatementTextarea.value.trim();
+    const controlDescription = controlDescriptionTextarea.value.trim();
+    const walkthroughDiscussion = walkthroughDiscussionTextarea.value.trim();
     
-    <div id="toast" class="toast"></div>
-    <div id="spinner" class="spinner"></div>
+    if (!controlObjective || !riskStatement || !controlDescription) {
+        showError("Please fill in Control Objective, Risk Statement, and Control Description before proceeding.");
+        return;
+    }
     
-    <script>
-        // Save data to localStorage and go to testing page
-        document.getElementById("saveAndGoButton").addEventListener("click", () => {
-            const controlObjective = document.getElementById("controlObjective").value;
-            const riskStatement = document.getElementById("riskStatement").value;
-            const controlDescription = document.getElementById("controlDescription").value;
-            const walkthroughDiscussion = document.getElementById("walkthroughDiscussion").value;
-            
-            if (!controlObjective || !riskStatement || !controlDescription) {
-                alert("Please fill in Control Objective, Risk Statement, and Control Description before proceeding.");
-                return;
-            }
-            
-            // Save data to localStorage (client-side storage)
-            localStorage.setItem("auditData", JSON.stringify({
-                control_objective: controlObjective,
-                risk_statement: riskStatement,
-                control_description: controlDescription,
-                walkthrough_discussion: walkthroughDiscussion,
-                timestamp: new Date().toISOString()
-            }));
-            
-            showToast("Data saved! Redirecting to testing page...");
-            
-            // Navigate to testing page after a short delay
-            setTimeout(() => {
-                window.location.href = "/testing";
-            }, 1500);
+    // Save data to localStorage
+    const data = {
+        control_objective: controlObjective,
+        risk_statement: riskStatement,
+        control_description: controlDescription,
+        walkthrough_discussion: walkthroughDiscussion,
+        timestamp: new Date().toISOString()
+    };
+    localStorage.setItem("auditData", JSON.stringify(data));
+    
+    showToast("Data saved! Redirecting to testing page...");
+    
+    // Navigate to testing page after a short delay
+    setTimeout(() => {
+        window.location.href = "/testing";
+    }, 1500);
+});
+
+// Rewrite Walkthrough functionality
+rewriteBtn.addEventListener("click", async () => {
+    const controlObjective = controlObjectiveTextarea.value.trim();
+    const riskStatement = riskStatementTextarea.value.trim();
+    const controlDescription = controlDescriptionTextarea.value.trim();
+    const walkthroughDiscussion = walkthroughDiscussionTextarea.value.trim();
+    
+    if (!controlDescription) {
+        showError("Please enter a control description first.");
+        return;
+    }
+    
+    if (!walkthroughDiscussion) {
+        showError("Please enter a walkthrough discussion first.");
+        return;
+    }
+    
+    hideError();
+    hideElement(results);
+    showElement(loading);
+    rewriteBtn.disabled = true;
+    rewriteBtn.textContent = "🔄 Processing...";
+    
+    try {
+        // Enhanced context for better rewriting
+        const enhancedControlContext = `Control Objective: ${controlObjective}
+
+Risk Statement: ${riskStatement}
+
+Control Description: ${controlDescription}`;
+
+        const response = await fetch("/api/rewrite-walkthrough", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                control_description: enhancedControlContext,
+                walkthrough_discussion: walkthroughDiscussion
+            })
         });
-
-        // Rewrite Walkthrough Discussion
-        document.getElementById("rewriteButton").addEventListener("click", async () => {
-            const controlDescription = document.getElementById("controlDescription").value;
-            const walkthroughDiscussion = document.getElementById("walkthroughDiscussion").value;
-            
-            if (!controlDescription.trim() || !walkthroughDiscussion.trim()) {
-                alert("Please enter both control description and walkthrough discussion.");
-                return;
-            }
-            
-            showSpinner();
-            try {
-                const response = await fetch("/api/rewrite-walkthrough", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ 
-                        control_description: controlDescription, 
-                        walkthrough_discussion: walkthroughDiscussion 
-                    })
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                if (data.narrative) {
-                    document.getElementById("rewrite-output").innerText = data.narrative;
-                    document.getElementById("copyNarrativeBtn").style.display = "inline-block";
-                    showToast("Walkthrough rewritten!");
-                } else {
-                    alert("Error: " + (data.error || "Failed to rewrite walkthrough"));
-                }
-            } catch (error) {
-                alert("Error: " + error.message);
-            } finally {
-                hideSpinner();
-            }
-        });
-
-        // Load saved data on page load
-        window.addEventListener("load", () => {
-            const savedData = localStorage.getItem("auditData");
-            if (savedData) {
-                try {
-                    const data = JSON.parse(savedData);
-                    document.getElementById("controlObjective").value = data.control_objective || "";
-                    document.getElementById("riskStatement").value = data.risk_statement || "";
-                    document.getElementById("controlDescription").value = data.control_description || "";
-                    document.getElementById("walkthroughDiscussion").value = data.walkthrough_discussion || "";
-                } catch (error) {
-                    console.error("Error loading saved data:", error);
-                }
-            }
-        });
-
-        // Copy to Clipboard Functionality
-        function copyText(id) {
-            const text = document.getElementById(id).innerText;
-            if (text && text !== "Click \"Rewrite Walkthrough\" to get a clean narrative...") {
-                navigator.clipboard.writeText(text).then(() => {
-                    showToast('Copied to clipboard!');
-                }).catch(() => {
-                    alert('Failed to copy to clipboard');
-                });
-            } else {
-                alert('No content to copy');
-            }
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
-
-        // Toast Notification
-        function showToast(message) {
-            const toast = document.getElementById("toast");
-            toast.innerText = message;
-            toast.classList.add("show");
-            setTimeout(() => {
-                toast.classList.remove("show");
-            }, 3000);
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
         }
+        
+        // Show rewrite result
+        rewriteContent.textContent = data.narrative;
+        showElement(rewriteResult);
+        showElement(results);
+        showToast("Walkthrough rewritten successfully!");
+        
+    } catch (err) {
+        console.error("❌ Error rewriting walkthrough:", err);
+        showError("Error rewriting walkthrough: " + err.message);
+    } finally {
+        hideElement(loading);
+        rewriteBtn.disabled = false;
+        rewriteBtn.textContent = "✨ Rewrite Walkthrough";
+    }
+});
 
-        // Spinner
-        function showSpinner() {
-            document.getElementById("spinner").style.display = "block";
-        }
+// Copy to clipboard functionality
+copyRewriteBtn.addEventListener("click", async () => {
+    const content = rewriteContent.textContent;
+    
+    if (!content) {
+        showError("No content to copy.");
+        return;
+    }
+    
+    try {
+        await navigator.clipboard.writeText(content);
+        
+        // Show success feedback
+        const originalText = copyRewriteBtn.textContent;
+        copyRewriteBtn.textContent = "✅ Copied!";
+        copyRewriteBtn.classList.remove("bg-blue-600", "hover:bg-blue-700");
+        copyRewriteBtn.classList.add("bg-green-600", "hover:bg-green-700");
+        
+        setTimeout(() => {
+            copyRewriteBtn.textContent = originalText;
+            copyRewriteBtn.classList.remove("bg-green-600", "hover:bg-green-700");
+            copyRewriteBtn.classList.add("bg-blue-600", "hover:bg-blue-700");
+        }, 2000);
+        
+    } catch (err) {
+        console.error("❌ Error copying to clipboard:", err);
+        showError("Failed to copy to clipboard: " + err.message);
+    }
+});
 
-        function hideSpinner() {
-            document.getElementById("spinner").style.display = "none";
-        }
-    </script>
-</body>
-</html>
+// Clear All functionality
+clearBtn.addEventListener("click", () => {
+    if (confirm("Are you sure you want to clear all data? This action cannot be undone.")) {
+        // Clear form fields
+        controlObjectiveTextarea.value = "";
+        riskStatementTextarea.value = "";
+        controlDescriptionTextarea.value = "";
+        walkthroughDiscussionTextarea.value = "";
+        
+        // Clear results
+        hideElement(results);
+        hideElement(rewriteResult);
+        hideElement(error);
+        
+        // Clear localStorage
+        localStorage.removeItem("auditData");
+        
+        showToast("All data cleared successfully!");
+        
+        console.log("🧹 All data cleared successfully");
+    }
+});
+
+// Auto-resize textareas
+function autoResize(textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+}
+
+controlObjectiveTextarea.addEventListener('input', () => autoResize(controlObjectiveTextarea));
+riskStatementTextarea.addEventListener('input', () => autoResize(riskStatementTextarea));
+controlDescriptionTextarea.addEventListener('input', () => autoResize(controlDescriptionTextarea));
+walkthroughDiscussionTextarea.addEventListener('input', () => autoResize(walkthroughDiscussionTextarea));
+
+// Initialize textarea heights
+document.addEventListener('DOMContentLoaded', () => {
+    autoResize(controlObjectiveTextarea);
+    autoResize(riskStatementTextarea);
+    autoResize(controlDescriptionTextarea);
+    autoResize(walkthroughDiscussionTextarea);
+});
+
+console.log("🚀 Audit Flow AI JavaScript loaded successfully");
+</script>
+{% endblock %}
