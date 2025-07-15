@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Flow AI - Testing</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">Audit Flow AI</a>
+            <button id="backButton" class="btn btn-secondary">Back</button>
+        </div>
+    </nav>
+    <div class="container">
+        <h1 class="text-center">Testing: Analyze Evidence</h1>
+        
+        <!-- Control Description Section -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Control Description</h5>
+                <p id="controlDescriptionDisplay" class="card-text">Loading control description...</p>
+            </div>
+        </div>
+
+        <!-- Test Attributes Container -->
+        <div id="testAttributesContainer">
+            <!-- Initial Test Attribute -->
+            <div class="test-attribute card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Test Attribute</h5>
+                    
+                    <!-- Test Script (no label, placeholder inside) -->
+                    <div class="mb-3">
+                        <textarea class="testScript form-control" rows="4" placeholder="Test Attribute - Paste the test script here..."></textarea>
+                    </div>
+                    
+                    <!-- Evidence Summary -->
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Evidence Summary</strong></label>
+                        <textarea class="evidenceSummary form-control" rows="4" placeholder="Provide instructions or notes about what the AI should look for in the uploaded evidence..."></textarea>
+                    </div>
+                    
+                    <!-- File Upload -->
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Evidence Files</strong></label>
+                        <div class="fileUploadContainer">
+                            <input type="file" class="form-control mb-3" name="evidence" multiple>
+                            <button class="addFileButton btn btn-secondary">Add More Files</button>
+                        </div>
+                    </div>
+                    
+                    <button class="analyzeButton btn btn-primary">Analyze Evidence</button>
+                    
+                    <!-- Analysis Results -->
+                    <div class="mb-3 mt-3">
+                        <label class="form-label"><strong>Analysis Narrative</strong></label>
+                        <textarea class="analysisNarrative form-control" rows="6" readonly placeholder="Analysis Narrative will appear here..."></textarea>
+                    </div>
+                    
+                    <!-- Manual Verdict Selection -->
+                    <div class="verdict-section mt-3">
+                        <h6>Select Verdict:</h6>
+                        <div class="verdict-buttons mb-3">
+                            <button class="passButton btn btn-success me-2">Pass</button>
+                            <button class="failButton btn btn-danger">Fail</button>
+                        </div>
+                        <p class="verdict text-center font-weight-bold"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Another Attribute Button -->
+        <button id="addAttributeButton" class="btn btn-secondary">Add Another Attribute</button>
+    </div>
+    <script>
+        // Load control description from localStorage on page load
+        window.addEventListener("load", () => {
+            const savedData = localStorage.getItem("auditData");
+            if (savedData) {
+                try {
+                    const data = JSON.parse(savedData);
+                    const controlDescription = data.control_description || "No control description available.";
+                    document.getElementById("controlDescriptionDisplay").innerText = controlDescription;
+                } catch (error) {
+                    console.error("Error loading saved data:", error);
+                    document.getElementById("controlDescriptionDisplay").innerText = "Error loading control description.";
+                }
+            } else {
+                document.getElementById("controlDescriptionDisplay").innerText = "No control description found. Please go back and save your audit data first.";
+            }
+        });
+
+        // Navigate back to the previous page
+        document.getElementById("backButton").addEventListener("click", () => {
+            window.location.href = "/";
+        });
+
+        // Function to handle evidence analysis - prioritizing Evidence Summary
+        async function analyzeEvidence(testAttribute) {
+            const testScript = testAttribute.querySelector(".testScript").value.trim();
+            const evidenceSummary = testAttribute.querySelector(".evidenceSummary").value.trim();
+            const fileUploadContainer = testAttribute.querySelector(".fileUploadContainer");
+            const files = fileUploadContainer.querySelectorAll("input[type='file']");
+            const analyzeButton = testAttribute.querySelector(".analyzeButton");
+            
+            // Get control description from the page
+            const controlDescription = document.getElementById("controlDescriptionDisplay").innerText;
+            
+            // Validation
+            if (!testScript) {
+                alert("Please enter a test script.");
+                return;
+            }
+            if (!evidenceSummary) {
+                alert("Please enter evidence summary/instructions.");
+                return;
+            }
+            
+            // Check if any files are selected
+            let hasFiles = false;
+            files.forEach(fileInput => {
+                if (fileInput.files.length > 0) {
+                    hasFiles = true;
+                }
+            });
+            
+            if (!hasFiles) {
+                alert("Please upload at least one evidence file.");
+                return;
+            }
+
+            const formData = new FormData();
+
+            // Add comprehensive context for AI analysis
+            formData.append("control_description", controlDescription);
+            formData.append("test_script", testScript);
+            formData.append("evidence_summary", evidenceSummary);
+            
+            // AI Instructions - PRIORITIZING Evidence Summary
+            const analysisInstructions = `
+You are a professional auditor. Your PRIMARY TASK is to support and validate the Evidence Summary comments provided by the auditor.
+
+**MOST IMPORTANT - EVIDENCE SUMMARY PRIORITY:**
+The auditor has provided specific instructions in the Evidence Summary: "${evidenceSummary}"
+
+**YOUR ROLE:**
+1. **PRIORITIZE** the Evidence Summary instructions above all else
+2. Review the uploaded evidence files to SUPPORT and VALIDATE the Evidence Summary comments
+3. Generate a professional audit narrative that CONFIRMS and EXPANDS on what the auditor noted in Evidence Summary
+4. Use the evidence to provide detailed support for the Evidence Summary observations
+
+**CONTEXT (Secondary):**
+- Control Description: ${controlDescription}
+- Test Attribute: ${testScript}
+
+**ANALYSIS APPROACH:**
+1. **START** with the Evidence Summary as your main guidance
+2. Review evidence files specifically looking for what the Evidence Summary indicates
+3. Build your narrative around SUPPORTING the Evidence Summary comments
+4. Add specific details from evidence files that CONFIRM the Evidence Summary
+5. If evidence contradicts Evidence Summary, note the discrepancy respectfully
+
+**OUTPUT FORMAT:**
+Generate a professional audit workpaper narrative that:
+- Validates and supports the Evidence Summary comments
+- References specific evidence details that confirm the auditor's observations
+- Uses the Evidence Summary as the foundation for conclusions
+- Maintains professional audit language
+
+**Remember: The Evidence Summary is the auditor's expert observation - your job is to support it with evidence details.**
+            `;
+            
+            formData.append("analysis_instructions", analysisInstructions);
+
+            // Add files to the form data
+            files.forEach(fileInput => {
+                Array.from(fileInput.files).forEach(file => {
+                    formData.append("evidence", file);
+                });
+            });
+
+            // Show loading state
+            analyzeButton.disabled = true;
+            analyzeButton.textContent = "Analyzing Evidence...";
+
+            try {
+                const response = await fetch("/api/analyze-evidence", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                if (data.analysis) {
+                    testAttribute.querySelector(".analysisNarrative").value = data.analysis;
+                    // Show the verdict buttons after analysis
+                    testAttribute.querySelector(".verdict-section").style.display = "block";
+                } else {
+                    alert(data.error || "Failed to analyze evidence.");
+                }
+            } catch (error) {
+                alert("Error: " + error.message);
+            } finally {
+                // Reset button state
+                analyzeButton.disabled = false;
+                analyzeButton.textContent = "Analyze Evidence";
+            }
+        }
+
+        // Function to set verdict
+        function setVerdict(testAttribute, verdict) {
+            const verdictElement = testAttribute.querySelector(".verdict");
+            const passButton = testAttribute.querySelector(".passButton");
+            const failButton = testAttribute.querySelector(".failButton");
+            
+            // Reset button states
+            passButton.classList.remove("btn-outline-success");
+            passButton.classList.add("btn-success");
+            failButton.classList.remove("btn-outline-danger");
+            failButton.classList.add("btn-danger");
+            
+            if (verdict === "Pass") {
+                passButton.classList.remove("btn-success");
+                passButton.classList.add("btn-outline-success");
+                verdictElement.innerHTML = `Final Verdict: <span class="badge bg-success">Pass</span>`;
+            } else {
+                failButton.classList.remove("btn-danger");
+                failButton.classList.add("btn-outline-danger");
+                verdictElement.innerHTML = `Final Verdict: <span class="badge bg-danger">Fail</span>`;
+            }
+        }
+
+        // Add event listeners for the initial test attribute
+        document.addEventListener("DOMContentLoaded", function() {
+            // Add event listener for the initial Analyze Evidence button
+            document.querySelector(".analyzeButton").addEventListener("click", async (event) => {
+                event.preventDefault();
+                const testAttribute = event.target.closest(".test-attribute");
+                await analyzeEvidence(testAttribute);
+            });
+
+            // Add event listener for the first Add More Files button
+            document.querySelector(".addFileButton").addEventListener("click", (event) => {
+                event.preventDefault();
+                const fileUploadContainer = event.target.closest(".fileUploadContainer");
+                const newFileInput = document.createElement("input");
+                newFileInput.type = "file";
+                newFileInput.className = "form-control mb-3";
+                newFileInput.name = "evidence";
+                fileUploadContainer.appendChild(newFileInput);
+            });
+
+            // Add event listeners for Pass/Fail buttons
+            document.querySelector(".passButton").addEventListener("click", (event) => {
+                const testAttribute = event.target.closest(".test-attribute");
+                setVerdict(testAttribute, "Pass");
+            });
+
+            document.querySelector(".failButton").addEventListener("click", (event) => {
+                const testAttribute = event.target.closest(".test-attribute");
+                setVerdict(testAttribute, "Fail");
+            });
+        });
+
+        // Add Another Test Attribute
+        document.getElementById("addAttributeButton").addEventListener("click", () => {
+            const testAttributesContainer = document.getElementById("testAttributesContainer");
+            const newAttribute = document.createElement("div");
+            newAttribute.className = "test-attribute card mb-3";
+            newAttribute.innerHTML = `
+                <div class="card-body">
+                    <h5 class="card-title">Test Attribute</h5>
+                    
+                    <!-- Test Script (no label, placeholder inside) -->
+                    <div class="mb-3">
+                        <textarea class="testScript form-control" rows="4" placeholder="Test Attribute - Paste the test script here..."></textarea>
+                    </div>
+                    
+                    <!-- Evidence Summary -->
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Evidence Summary</strong></label>
+                        <textarea class="evidenceSummary form-control" rows="4" placeholder="Provide instructions or notes about what the AI should look for in the uploaded evidence..."></textarea>
+                    </div>
+                    
+                    <!-- File Upload -->
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Evidence Files</strong></label>
+                        <div class="fileUploadContainer">
+                            <input type="file" class="form-control mb-3" name="evidence" multiple>
+                            <button class="addFileButton btn btn-secondary">Add More Files</button>
+                        </div>
+                    </div>
+                    
+                    <button class="analyzeButton btn btn-primary">Analyze Evidence</button>
+                    
+                    <!-- Analysis Results -->
+                    <div class="mb-3 mt-3">
+                        <label class="form-label"><strong>Analysis Narrative</strong></label>
+                        <textarea class="analysisNarrative form-control" rows="6" readonly placeholder="Analysis Narrative will appear here..."></textarea>
+                    </div>
+                    
+                    <!-- Manual Verdict Selection -->
+                    <div class="verdict-section mt-3">
+                        <h6>Select Verdict:</h6>
+                        <div class="verdict-buttons mb-3">
+                            <button class="passButton btn btn-success me-2">Pass</button>
+                            <button class="failButton btn btn-danger">Fail</button>
+                        </div>
+                        <p class="verdict text-center font-weight-bold"></p>
+                    </div>
+                </div>
+            `;
+            testAttributesContainer.appendChild(newAttribute);
+
+            // Add event listener for the new Analyze Evidence button
+            const analyzeButton = newAttribute.querySelector(".analyzeButton");
+            analyzeButton.addEventListener("click", async (event) => {
+                event.preventDefault();
+                await analyzeEvidence(newAttribute);
+            });
+
+            // Add event listener for adding more file upload fields
+            const addFileButton = newAttribute.querySelector(".addFileButton");
+            addFileButton.addEventListener("click", (event) => {
+                event.preventDefault();
+                const fileUploadContainer = event.target.closest(".fileUploadContainer");
+                const newFileInput = document.createElement("input");
+                newFileInput.type = "file";
+                newFileInput.className = "form-control mb-3";
+                newFileInput.name = "evidence";
+                fileUploadContainer.appendChild(newFileInput);
+            });
+
+            // Add event listeners for Pass/Fail buttons
+            const passButton = newAttribute.querySelector(".passButton");
+            passButton.addEventListener("click", (event) => {
+                const testAttribute = event.target.closest(".test-attribute");
+                setVerdict(testAttribute, "Pass");
+            });
+
+            const failButton = newAttribute.querySelector(".failButton");
+            failButton.addEventListener("click", (event) => {
+                const testAttribute = event.target.closest(".test-attribute");
+                setVerdict(testAttribute, "Fail");
+            });
+        });
+    </script>
+</body>
+</html>

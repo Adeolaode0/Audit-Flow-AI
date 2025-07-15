@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Flow AI</title>
+    <!-- Link to CSS -->
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">Audit Flow AI</a>
+            <button id="testButton" class="btn btn-primary">Go to Testing Page</button>
+        </div>
+    </nav>
+    <div class="container">
+        <h1 class="text-center">Welcome to Audit Flow AI</h1>
+        
+        <!-- Main Audit Form -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Control Objective & Risk Assessment</h5>
+                
+                <!-- Control Objective -->
+                <div class="mb-3">
+                    <label for="controlObjective" class="form-label">Control Objective</label>
+                    <textarea id="controlObjective" class="form-control" rows="3" placeholder="Enter the control objective..."></textarea>
+                </div>
+                
+                <!-- Risk Statement -->
+                <div class="mb-3">
+                    <label for="riskStatement" class="form-label">Risk Statement</label>
+                    <textarea id="riskStatement" class="form-control" rows="3" placeholder="Enter the risk statement..."></textarea>
+                </div>
+                
+                <!-- Control Description -->
+                <div class="mb-3">
+                    <label for="controlDescription" class="form-label">Control Description</label>
+                    <textarea id="controlDescription" class="form-control" rows="4" placeholder="Enter control description..."></textarea>
+                </div>
+                
+                <!-- Walkthrough Discussion -->
+                <div class="mb-3">
+                    <label for="walkthroughDiscussion" class="form-label">Walkthrough Discussion</label>
+                    <textarea id="walkthroughDiscussion" class="form-control" rows="4" placeholder="Enter walkthrough discussion..."></textarea>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="mb-3">
+                    <button id="saveAndGoButton" class="btn btn-success me-2">Save & Go to Testing</button>
+                    <button id="rewriteButton" class="btn btn-warning">Rewrite Walkthrough</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Results Section -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Rewritten Walkthrough</h5>
+                        <div id="rewriteResult" class="mt-3">
+                            <p id="rewrite-output" class="text-muted">Click "Rewrite Walkthrough" to get a clean narrative...</p>
+                            <button class="btn btn-secondary" onclick="copyText('rewrite-output')" style="display:none;" id="copyNarrativeBtn">Copy Narrative</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="toast" class="toast"></div>
+    <div id="spinner" class="spinner"></div>
+    
+    <script>
+        // Navigate to the testing page
+        document.getElementById("testButton").addEventListener("click", () => {
+            window.location.href = "/testing";
+        });
+
+        // Save data to localStorage and go to testing page
+        document.getElementById("saveAndGoButton").addEventListener("click", () => {
+            const controlObjective = document.getElementById("controlObjective").value;
+            const riskStatement = document.getElementById("riskStatement").value;
+            const controlDescription = document.getElementById("controlDescription").value;
+            const walkthroughDiscussion = document.getElementById("walkthroughDiscussion").value;
+            
+            if (!controlObjective || !riskStatement || !controlDescription) {
+                alert("Please fill in Control Objective, Risk Statement, and Control Description before proceeding.");
+                return;
+            }
+            
+            // Save data to localStorage (client-side storage)
+            localStorage.setItem("auditData", JSON.stringify({
+                control_objective: controlObjective,
+                risk_statement: riskStatement,
+                control_description: controlDescription,
+                walkthrough_discussion: walkthroughDiscussion,
+                timestamp: new Date().toISOString()
+            }));
+            
+            showToast("Data saved! Redirecting to testing page...");
+            
+            // Navigate to testing page after a short delay
+            setTimeout(() => {
+                window.location.href = "/testing";
+            }, 1500);
+        });
+
+        // Rewrite Walkthrough Discussion
+        document.getElementById("rewriteButton").addEventListener("click", async () => {
+            const controlDescription = document.getElementById("controlDescription").value;
+            const walkthroughDiscussion = document.getElementById("walkthroughDiscussion").value;
+            
+            if (!controlDescription.trim() || !walkthroughDiscussion.trim()) {
+                alert("Please enter both control description and walkthrough discussion.");
+                return;
+            }
+            
+            showSpinner();
+            try {
+                const response = await fetch("/api/rewrite-walkthrough", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ 
+                        control_description: controlDescription, 
+                        walkthrough_discussion: walkthroughDiscussion 
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.narrative) {
+                    document.getElementById("rewrite-output").innerText = data.narrative;
+                    document.getElementById("copyNarrativeBtn").style.display = "inline-block";
+                    showToast("Walkthrough rewritten!");
+                } else {
+                    alert("Error: " + (data.error || "Failed to rewrite walkthrough"));
+                }
+            } catch (error) {
+                alert("Error: " + error.message);
+            } finally {
+                hideSpinner();
+            }
+        });
+
+        // Load saved data on page load
+        window.addEventListener("load", () => {
+            const savedData = localStorage.getItem("auditData");
+            if (savedData) {
+                try {
+                    const data = JSON.parse(savedData);
+                    document.getElementById("controlObjective").value = data.control_objective || "";
+                    document.getElementById("riskStatement").value = data.risk_statement || "";
+                    document.getElementById("controlDescription").value = data.control_description || "";
+                    document.getElementById("walkthroughDiscussion").value = data.walkthrough_discussion || "";
+                } catch (error) {
+                    console.error("Error loading saved data:", error);
+                }
+            }
+        });
+
+        // Copy to Clipboard Functionality
+        function copyText(id) {
+            const text = document.getElementById(id).innerText;
+            if (text && text !== "Click \"Rewrite Walkthrough\" to get a clean narrative...") {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast('Copied to clipboard!');
+                }).catch(() => {
+                    alert('Failed to copy to clipboard');
+                });
+            } else {
+                alert('No content to copy');
+            }
+        }
+
+        // Toast Notification
+        function showToast(message) {
+            const toast = document.getElementById("toast");
+            toast.innerText = message;
+            toast.classList.add("show");
+            setTimeout(() => {
+                toast.classList.remove("show");
+            }, 3000);
+        }
+
+        // Spinner
+        function showSpinner() {
+            document.getElementById("spinner").style.display = "block";
+        }
+
+        function hideSpinner() {
+            document.getElementById("spinner").style.display = "none";
+        }
+    </script>
+</body>
+</html>

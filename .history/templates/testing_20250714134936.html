@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Flow AI - Testing</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">Audit Flow AI</a>
+            <button id="backButton" class="btn btn-secondary">Back</button>
+        </div>
+    </nav>
+    <div class="container">
+        <h1 class="text-center">Testing: Analyze Evidence</h1>
+        
+        <!-- Control Description Section -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Control Description</h5>
+                <p id="controlDescriptionDisplay" class="card-text">Loading control description...</p>
+            </div>
+        </div>
+
+        <!-- Walkthrough Discussion Section -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Walkthrough Discussion</h5>
+                <p id="walkthroughDiscussionDisplay" class="card-text">Loading walkthrough discussion...</p>
+            </div>
+        </div>
+
+        <!-- Test Attributes Container -->
+        <div id="testAttributesContainer">
+            <!-- Initial Test Attribute -->
+            <div class="test-attribute card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Test Attribute</h5>
+                    
+                    <!-- Test Script (no label, placeholder inside) -->
+                    <div class="mb-3">
+                        <textarea class="testScript form-control" rows="4" placeholder="Test Attribute - Paste the test script here..."></textarea>
+                    </div>
+                    
+                    <!-- Evidence Summary -->
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Evidence Summary</strong></label>
+                        <textarea class="evidenceSummary form-control" rows="4" placeholder="Provide instructions or notes about what the AI should look for in the uploaded evidence..."></textarea>
+                    </div>
+                    
+                    <!-- File Upload -->
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Evidence Files</strong></label>
+                        <div class="fileUploadContainer">
+                            <input type="file" class="form-control mb-3" name="evidence" multiple>
+                            <button class="addFileButton btn btn-secondary">Add More Files</button>
+                        </div>
+                    </div>
+                    
+                    <button class="analyzeButton btn btn-primary">Analyze Evidence</button>
+                    
+                    <!-- Analysis Results -->
+                    <div class="mb-3 mt-3">
+                        <label class="form-label"><strong>Analysis Narrative</strong></label>
+                        <textarea class="analysisNarrative form-control" rows="6" readonly placeholder="Analysis Narrative will appear here..."></textarea>
+                    </div>
+                    
+                    <!-- Manual Verdict Selection -->
+                    <div class="verdict-section mt-3">
+                        <h6>Select Verdict:</h6>
+                        <div class="verdict-buttons mb-3">
+                            <button class="passButton btn btn-success me-2">Pass</button>
+                            <button class="failButton btn btn-danger">Fail</button>
+                        </div>
+                        <p class="verdict text-center font-weight-bold"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Another Attribute Button -->
+        <button id="addAttributeButton" class="btn btn-secondary mb-4">Add Another Attribute</button>
+
+        <!-- Overall Rationale Section -->
+        <div class="card mb-3 mt-4">
+            <div class="card-body">
+                <h5 class="card-title">Overall Test Conclusion</h5>
+                <button id="generateRationaleButton" class="btn btn-warning mb-3">Generate Rationale Supporting Conclusion</button>
+                <div class="mb-3">
+                    <label class="form-label"><strong>Overall Rationale</strong></label>
+                    <textarea id="overallRationale" class="form-control" rows="8" readonly placeholder="Overall rationale will appear here after generating..."></textarea>
+                </div>
+                <!-- Rationale Action Buttons -->
+                <div id="rationaleActions" class="mb-3" style="display: none;">
+                    <button id="copyRationaleButton" class="btn btn-info me-2">Copy to Clipboard</button>
+                    <button id="downloadPdfButton" class="btn btn-success">Download PDF</button>
+                </div>
+                <div id="overallVerdictSection" class="mt-3" style="display: none;">
+                    <h6>Overall Test Result:</h6>
+                    <p id="overallVerdict" class="text-center font-weight-bold"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Load control description and walkthrough discussion from localStorage on page load
+        window.addEventListener("load", () => {
+            const savedData = localStorage.getItem("auditData");
+            if (savedData) {
+                try {
+                    const data = JSON.parse(savedData);
+                    const controlDescription = data.control_description || "No control description available.";
+                    const walkthroughDiscussion = data.walkthrough_discussion || "No walkthrough discussion available.";
+                    
+                    document.getElementById("controlDescriptionDisplay").innerText = controlDescription;
+                    document.getElementById("walkthroughDiscussionDisplay").innerText = walkthroughDiscussion;
+                } catch (error) {
+                    console.error("Error loading saved data:", error);
+                    document.getElementById("controlDescriptionDisplay").innerText = "Error loading control description.";
+                    document.getElementById("walkthroughDiscussionDisplay").innerText = "Error loading walkthrough discussion.";
+                }
+            } else {
+                document.getElementById("controlDescriptionDisplay").innerText = "No control description found. Please go back and save your audit data first.";
+                document.getElementById("walkthroughDiscussionDisplay").innerText = "No walkthrough discussion found. Please go back and save your audit data first.";
+            }
+        });
+
+        // Navigate back to the previous page
+        document.getElementById("backButton").addEventListener("click", () => {
+            window.location.href = "/";
+        });
+
+        // Function to copy rationale to clipboard
+        function copyRationaleToClipboard() {
+            const rationaleText = document.getElementById("overallRationale").value;
+            if (!rationaleText) {
+                alert("No rationale to copy.");
+                return;
+            }
+            
+            navigator.clipboard.writeText(rationaleText).then(() => {
+                const copyButton = document.getElementById("copyRationaleButton");
+                const originalText = copyButton.textContent;
+                copyButton.textContent = "Copied!";
+                copyButton.classList.remove("btn-info");
+                copyButton.classList.add("btn-success");
+                
+                setTimeout(() => {
+                    copyButton.textContent = originalText;
+                    copyButton.classList.remove("btn-success");
+                    copyButton.classList.add("btn-info");
+                }, 2000);
+            }).catch(err => {
+                alert("Failed to copy to clipboard: " + err.message);
+            });
+        }
+
+        // Function to download rationale as PDF
+        async function downloadRationalePDF() {
+            const rationaleText = document.getElementById("overallRationale").value;
+            const overallVerdict = document.getElementById("overallVerdict").innerText;
+            const controlDescription = document.getElementById("controlDescriptionDisplay").innerText;
+            const walkthroughDiscussion = document.getElementById("walkthroughDiscussionDisplay").innerText;
+            
+            if (!rationaleText) {
+                alert("No rationale to download.");
+                return;
+            }
+            
+            // Collect test attribute data for the PDF
+            const testAttributes = document.querySelectorAll(".test-attribute");
+            let attributesData = [];
+            
+            testAttributes.forEach((attribute, index) => {
+                const testScript = attribute.querySelector(".testScript").value.trim();
+                const evidenceSummary = attribute.querySelector(".evidenceSummary").value.trim();
+                const analysisNarrative = attribute.querySelector(".analysisNarrative").value.trim();
+                const verdictElement = attribute.querySelector(".verdict");
+                const verdictText = verdictElement.innerText.trim();
+                
+                if (testScript && analysisNarrative && verdictText.includes("Final Verdict:")) {
+                    const verdict = verdictText.includes("Pass") ? "Pass" : "Fail";
+                    attributesData.push({
+                        index: index + 1,
+                        testScript: testScript,
+                        evidenceSummary: evidenceSummary,
+                        analysisNarrative: analysisNarrative,
+                        verdict: verdict
+                    });
+                }
+            });
+            
+            // Prepare data for PDF generation
+            const pdfData = {
+                control_description: controlDescription,
+                walkthrough_discussion: walkthroughDiscussion,
+                attributes_data: attributesData,
+                overall_rationale: rationaleText,
+                overall_verdict: overallVerdict
+            };
+            
+            const downloadButton = document.getElementById("downloadPdfButton");
+            downloadButton.disabled = true;
+            downloadButton.textContent = "Generating PDF...";
+            
+            try {
+                const response = await fetch("/api/generate-pdf", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(pdfData)
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `Audit_Test_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    const error = await response.json();
+                    alert("Failed to generate PDF: " + (error.error || "Unknown error"));
+                }
+            } catch (error) {
+                alert("Error generating PDF: " + error.message);
+            } finally {
+                downloadButton.disabled = false;
+                downloadButton.textContent = "Download PDF";
+            }
+        }
+
+        // Function to generate overall rationale based on all test attributes
+        async function generateOverallRationale() {
+            const testAttributes = document.querySelectorAll(".test-attribute");
+            const controlDescription = document.getElementById("controlDescriptionDisplay").innerText;
+            const walkthroughDiscussion = document.getElementById("walkthroughDiscussionDisplay").innerText;
+            
+            // Collect data from all test attributes
+            let attributesData = [];
+            let hasFailures = false;
+            let allVerdictsMade = true;
+            
+            testAttributes.forEach((attribute, index) => {
+                const testScript = attribute.querySelector(".testScript").value.trim();
+                const evidenceSummary = attribute.querySelector(".evidenceSummary").value.trim();
+                const analysisNarrative = attribute.querySelector(".analysisNarrative").value.trim();
+                const verdictElement = attribute.querySelector(".verdict");
+                
+                // Check if verdict has been made
+                const verdictText = verdictElement.innerText.trim();
+                if (!verdictText || !verdictText.includes("Final Verdict:")) {
+                    allVerdictsMade = false;
+                    return;
+                }
+                
+                // Determine if this attribute passed or failed
+                const isPass = verdictText.includes("Pass");
+                const isFail = verdictText.includes("Fail");
+                
+                if (isFail) {
+                    hasFailures = true;
+                }
+                
+                attributesData.push({
+                    index: index + 1,
+                    testScript: testScript,
+                    evidenceSummary: evidenceSummary,
+                    analysisNarrative: analysisNarrative,
+                    verdict: isPass ? "Pass" : "Fail"
+                });
+            });
+            
+            // Validation
+            if (attributesData.length === 0) {
+                alert("Please complete at least one test attribute with analysis and verdict.");
+                return;
+            }
+            
+            if (!allVerdictsMade) {
+                alert("Please complete analysis and select verdicts for all test attributes before generating overall rationale.");
+                return;
+            }
+            
+            // Determine overall result
+            const overallResult = hasFailures ? "FAIL" : "PASS";
+            
+            // Prepare data for API call
+            const formData = new FormData();
+            formData.append("control_description", controlDescription);
+            formData.append("walkthrough_discussion", walkthroughDiscussion);
+            formData.append("overall_result", overallResult);
+            formData.append("attributes_data", JSON.stringify(attributesData));
+            
+            // Create comprehensive instructions for overall rationale
+            const rationaleInstructions = `
+You are a professional auditor preparing the overall conclusion for a control test. Based on the individual test attribute results, generate a comprehensive rationale supporting the overall conclusion.
+
+**OVERALL TEST RESULT: ${overallResult}**
+
+**CONTEXT:**
+- Control Description: ${controlDescription}
+- Walkthrough Discussion: ${walkthroughDiscussion}
+
+**TEST ATTRIBUTES SUMMARY:**
+${attributesData.map(attr => `
+Attribute ${attr.index}:
+- Test Script: ${attr.testScript}
+- Evidence Summary: ${attr.evidenceSummary}
+- Analysis: ${attr.analysisNarrative}
+- Verdict: ${attr.verdict}
+`).join('\n')}
+
+**RATIONALE REQUIREMENTS:**
+1. **Overall Conclusion**: Start with clear statement of ${overallResult}
+2. **Supporting Logic**: ${hasFailures ? 
+   "Since one or more test attributes failed, the overall control test must FAIL. Explain which attributes failed and why this impacts the overall control effectiveness." : 
+   "Since all test attributes passed, explain how this supports overall control effectiveness."}
+3. **Individual Attribute Analysis**: Summarize findings from each test attribute
+4. **Control Effectiveness Assessment**: Relate findings back to the control description and objectives
+5. **Professional Conclusion**: Provide clear audit opinion on control operation
+
+**OUTPUT FORMAT:**
+Generate a professional audit rationale that:
+- States the overall conclusion clearly (${overallResult})
+- Summarizes key findings from each test attribute
+- Explains the basis for the overall conclusion
+- Relates findings to control objectives
+- Uses professional audit language
+- Provides sufficient detail to support the conclusion
+
+**Remember: If ANY attribute failed, the overall test must FAIL regardless of other attributes passing.**
+            `;
+            
+            formData.append("rationale_instructions", rationaleInstructions);
+            
+            // Show loading state
+            const generateButton = document.getElementById("generateRationaleButton");
+            generateButton.disabled = true;
+            generateButton.textContent = "Generating Rationale...";
+            
+            try {
+                const response = await fetch("/api/generate-rationale", {
+                    method: "POST",
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.rationale) {
+                    document.getElementById("overallRationale").value = data.rationale;
+                    
+                    // Show overall verdict
+                    const overallVerdictElement = document.getElementById("overallVerdict");
+                    const overallVerdictSection = document.getElementById("overallVerdictSection");
+                    
+                    if (overallResult === "PASS") {
+                        overallVerdictElement.innerHTML = `Overall Test Result: <span class="badge bg-success fs-5">PASS</span>`;
+                    } else {
+                        overallVerdictElement.innerHTML = `Overall Test Result: <span class="badge bg-danger fs-5">FAIL</span>`;
+                    }
+                    
+                    overallVerdictSection.style.display = "block";
+                    
+                    // Show the action buttons
+                    document.getElementById("rationaleActions").style.display = "block";
+                } else {
+                    alert(data.error || "Failed to generate overall rationale.");
+                }
+            } catch (error) {
+                alert("Error: " + error.message);
+            } finally {
+                // Reset button state
+                generateButton.disabled = false;
+                generateButton.textContent = "Generate Rationale Supporting Conclusion";
+            }
+        }
+
+        // Function to handle evidence analysis - STRICT FOCUS on Test Attribute and Evidence Summary
+        async function analyzeEvidence(testAttribute) {
+            const testScript = testAttribute.querySelector(".testScript").value.trim();
+            const evidenceSummary = testAttribute.querySelector(".evidenceSummary").value.trim();
+            const fileUploadContainer = testAttribute.querySelector(".fileUploadContainer");
+            const files = fileUploadContainer.querySelectorAll("input[type='file']");
+            const analyzeButton = testAttribute.querySelector(".analyzeButton");
+            
+            // Get control description and walkthrough discussion from the page
+            const controlDescription = document.getElementById("controlDescriptionDisplay").innerText;
+            const walkthroughDiscussion = document.getElementById("walkthroughDiscussionDisplay").innerText;
+            
+            // Validation
+            if (!testScript) {
+                alert("Please enter a test script.");
+                return;
+            }
+            if (!evidenceSummary) {
+                alert("Please enter evidence summary/instructions.");
+                return;
+            }
+            
+            // Check if any files are selected
+            let hasFiles = false;
+            files.forEach(fileInput => {
+                if (fileInput.files.length > 0) {
+                    hasFiles = true;
+                }
+            });
+            
+            if (!hasFiles) {
+                alert("Please upload at least one evidence file.");
+                return;
+            }
+
+            const formData = new FormData();
+
+            // Add comprehensive context for AI analysis
+            formData.append("control_description", controlDescription);
+            formData.append("walkthrough_discussion", walkthroughDiscussion);
+            formData.append("test_script", testScript);
+            formData.append("evidence_summary", evidenceSummary);
+            
+            // AI Instructions - STRICT FOCUS on Test Attribute and Evidence Summary
+            const analysisInstructions = `
+You are a professional auditor. Your task is to provide focused analysis ONLY within the scope defined by the Test Attribute and Evidence Summary.
+
+**CRITICAL - STAY IN SCOPE:**
+- Test Attribute Scope: "${testScript}"
+- Evidence Summary Focus: "${evidenceSummary}"
+
+**STRICT ANALYSIS RULES:**
+1. **ONLY** analyze evidence that relates to the specific Test Attribute
+2. **IGNORE** any information in evidence files that is outside the Test Attribute scope
+3. **PRIORITIZE** the Evidence Summary instructions above all else
+4. **DO NOT** comment on or analyze evidence content that is not relevant to the Test Attribute
+5. **FOCUS ONLY** on what the Evidence Summary asks you to look for
+
+**YOUR ROLE:**
+- Support and validate ONLY the Evidence Summary comments
+- Review evidence files ONLY for information related to the Test Attribute
+- Generate analysis that CONFIRMS the Evidence Summary within the Test Attribute scope
+- Ignore any additional information in evidence files that goes beyond the Test Attribute
+
+**CONTEXT (Background only):**
+- Control Description: ${controlDescription}
+- Walkthrough Discussion: ${walkthroughDiscussion}
+
+**ANALYSIS APPROACH:**
+1. **READ** the Test Attribute scope carefully - this defines your boundaries
+2. **FOLLOW** the Evidence Summary instructions precisely
+3. **SCAN** evidence files ONLY for information relevant to the Test Attribute
+4. **IGNORE** any evidence content outside the Test Attribute scope
+5. **BUILD** narrative around SUPPORTING the Evidence Summary within the defined scope
+6. **STAY FOCUSED** - do not analyze anything beyond what the Test Attribute specifies
+
+**OUTPUT FORMAT:**
+Generate a focused audit narrative that:
+- Validates the Evidence Summary comments within the Test Attribute scope
+- References ONLY evidence details relevant to the Test Attribute
+- Ignores out-of-scope information even if it appears significant
+- Maintains strict focus on the specified test scope
+- Uses professional audit language
+
+**REMEMBER: STAY STRICTLY WITHIN THE TEST ATTRIBUTE SCOPE. DO NOT ANALYZE EVIDENCE CONTENT OUTSIDE THIS SCOPE, EVEN IF IT SEEMS IMPORTANT.**
+            `;
+            
+            formData.append("analysis_instructions", analysisInstructions);
+
+            // Add files to the form data
+            files.forEach(fileInput => {
+                Array.from(fileInput.files).forEach(file => {
+                    formData.append("evidence", file);
+                });
+            });
+
+            // Show loading state
+            analyzeButton.disabled = true;
+            analyzeButton.textContent = "Analyzing Evidence...";
+
+            try {
+                const response = await fetch("/api/analyze-evidence", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                if (data.analysis) {
+                    testAttribute.querySelector(".analysisNarrative").value = data.analysis;
+                    // Show the verdict buttons after analysis
+                    testAttribute.querySelector(".verdict-section").style.display = "block";
+                } else {
+                    alert(data.error || "Failed to analyze evidence.");
+                }
+            } catch (error) {
+                alert("Error: " + error.message);
+            } finally {
+                // Reset button state
+                analyzeButton.disabled = false;
+                analyzeButton.textContent = "Analyze Evidence";
+            }
+        }
+
+        // Function to set verdict
+        function setVerdict(testAttribute, verdict) {
+            const verdictElement = testAttribute.querySelector(".verdict");
+            const passButton = testAttribute.querySelector(".passButton");
+            const failButton = testAttribute.querySelector(".failButton");
+            
+            // Reset button states
+            passButton.classList.remove("btn-outline-success");
+            passButton.classList.add("btn-success");
+            failButton.classList.remove("btn-outline-danger");
+            failButton.classList.add("btn-danger");
+            
+            if (verdict === "Pass") {
+                passButton.classList.remove("btn-success");
+                passButton.classList.add("btn-outline-success");
+                verdictElement.innerHTML = `Final Verdict: <span class="badge bg-success">Pass</span>`;
+            } else {
+                failButton.classList.remove("btn-danger");
+                failButton.classList.add("btn-outline-danger");
+                verdictElement.innerHTML = `Final Verdict: <span class="badge bg-danger">Fail</span>`;
+            }
+        }
+
+        // Add event listeners for the initial test attribute
+        document.addEventListener("DOMContentLoaded", function() {
+            // Add event listener for the initial Analyze Evidence button
+            document.querySelector(".analyzeButton").addEventListener("click", async (event) => {
+                event.preventDefault();
+                const testAttribute = event.target.closest(".test-attribute");
+                await analyzeEvidence(testAttribute);
+            });
+
+            // Add event listener for the first Add More Files button
+            document.querySelector(".addFileButton").addEventListener("click", (event) => {
+                event.preventDefault();
+                const fileUploadContainer = event.target.closest(".fileUploadContainer");
+                const newFileInput = document.createElement("input");
+                newFileInput.type = "file";
+                newFileInput.className = "form-control mb-3";
+                newFileInput.name = "evidence";
+                fileUploadContainer.appendChild(newFileInput);
+            });
+
+            // Add event listeners for Pass/Fail buttons
+            document.querySelector(".passButton").addEventListener("click", (event) => {
+                const testAttribute = event.target.closest(".test-attribute");
+                setVerdict(testAttribute, "Pass");
+            });
+
+            document.querySelector(".failButton").addEventListener("click", (event) => {
+                const testAttribute = event.target.closest(".test-attribute");
+                setVerdict(testAttribute, "Fail");
+            });
+
+            // Add event listener for overall rationale generation
+            document.getElementById("generateRationaleButton").addEventListener("click", async (event) => {
+                event.preventDefault();
+                await generateOverallRationale();
+            });
+
+            // Add event listeners for copy and download buttons
+            document.getElementById("copyRationaleButton").addEventListener("click", copyRationaleToClipboard);
+            document.getElementById("downloadPdfButton").addEventListener("click", downloadRationalePDF);
+        });
+
+        // Add Another Test Attribute
+        document.getElementById("addAttributeButton").addEventListener("click", () => {
+            const testAttributesContainer = document.getElementById("testAttributesContainer");
+            const newAttribute = document.createElement("div");
+            newAttribute.className = "test-attribute card mb-3";
+            newAttribute.innerHTML = `
+                <div class="card-body">
+                    <h5 class="card-title">Test Attribute</h5>
+                    
+                    <!-- Test Script (no label, placeholder inside) -->
+                    <div class="mb-3">
+                        <textarea class="testScript form-control" rows="4" placeholder="Test Attribute - Paste the test script here..."></textarea>
+                    </div>
+                    
+                    <!-- Evidence Summary -->
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Evidence Summary</strong></label>
+                        <textarea class="evidenceSummary form-control" rows="4" placeholder="Provide instructions or notes about what the AI should look for in the uploaded evidence..."></textarea>
+                    </div>
+                    
+                    <!-- File Upload -->
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Evidence Files</strong></label>
+                        <div class="fileUploadContainer">
+                            <input type="file" class="form-control mb-3" name="evidence" multiple>
+                            <button class="addFileButton btn btn-secondary">Add More Files</button>
+                        </div>
+                    </div>
+                    
+                    <button class="analyzeButton btn btn-primary">Analyze Evidence</button>
+                    
+                    <!-- Analysis Results -->
+                    <div class="mb-3 mt-3">
+                        <label class="form-label"><strong>Analysis Narrative</strong></label>
+                        <textarea class="analysisNarrative form-control" rows="6" readonly placeholder="Analysis Narrative will appear here..."></textarea>
+                    </div>
+                    
+                    <!-- Manual Verdict Selection -->
+                    <div class="verdict-section mt-3">
+                        <h6>Select Verdict:</h6>
+                        <div class="verdict-buttons mb-3">
+                            <button class="passButton btn btn-success me-2">Pass</button>
+                            <button class="failButton btn btn-danger">Fail</button>
+                        </div>
+                        <p class="verdict text-center font-weight-bold"></p>
+                    </div>
+                </div>
+            `;
+            testAttributesContainer.appendChild(newAttribute);
+
+            // Add event listener for the new Analyze Evidence button
+            const analyzeButton = newAttribute.querySelector(".analyzeButton");
+            analyzeButton.addEventListener("click", async (event) => {
+                event.preventDefault();
+                await analyzeEvidence(newAttribute);
+            });
+
+            // Add event listener for adding more file upload fields
+            const addFileButton = newAttribute.querySelector(".addFileButton");
+            addFileButton.addEventListener("click", (event) => {
+                event.preventDefault();
+                const fileUploadContainer = event.target.closest(".fileUploadContainer");
+                const newFileInput = document.createElement("input");
+                newFileInput.type = "file";
+                newFileInput.className = "form-control mb-3";
+                newFileInput.name = "evidence";
+                fileUploadContainer.appendChild(newFileInput);
+            });
+
+            // Add event listeners for Pass/Fail buttons
+            const passButton = newAttribute.querySelector(".passButton");
+            passButton.addEventListener("click", (event) => {
+                const testAttribute = event.target.closest(".test-attribute");
+                setVerdict(testAttribute, "Pass");
+            });
+
+            const failButton = newAttribute.querySelector(".failButton");
+            failButton.addEventListener("click", (event) => {
+                const testAttribute = event.target.closest(".test-attribute");
+                setVerdict(testAttribute, "Fail");
+            });
+        });
+    </script>
+</body>
+</html>
