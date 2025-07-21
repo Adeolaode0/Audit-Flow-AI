@@ -1,7 +1,7 @@
 import os
 import json
 from flask import Flask, render_template, request, jsonify, send_file
-from openai import OpenAI  # Updated for OpenAI v1.x
+from openai import OpenAI  # NEW import style for v1.x
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 import PyPDF2
@@ -215,27 +215,3 @@ def clear_data():
         'success': True,
         'message': 'Server data cleared successfully'
     })
-
-if __name__ == '__main__':
-    print("🚀 Starting Audit Flow AI with GPT-3.5-Turbo...")
-    print("=" * 70)
-    print(f"📁 Project Directory: {os.getcwd()}")
-    api_key = os.getenv('OPENAI_API_KEY')
-    if api_key:
-        print("🔑 OpenAI API Key Status: ✅ Set")
-        try:
-            print("🧪 Testing OpenAI connection...")
-            test_response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": "Hello"}],
-                max_tokens=5
-            )
-            print("✅ OpenAI connection successful")
-        except Exception as e:
-            print(f"❌ OpenAI connection failed: {e}")
-    else:
-        print("❌ OpenAI API Key Status: Not set")
-        print("Please add your OpenAI API key to the .env file")
-    print("🌐 Server will start at: http://localhost:5000")
-    print("=" * 70)
-    app.run(debug=True,
