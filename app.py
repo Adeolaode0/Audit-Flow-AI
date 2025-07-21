@@ -18,6 +18,9 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max file size
 app.config['UPLOAD_FOLDER'] = 'temp_uploads'
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
+import os
+app.logger.info(f"OPENAI_API_KEY: {os.getenv('OPENAI_API_KEY')}")
+
 # Initialize OpenAI client (new style)
 client = OpenAI(
     api_key=os.getenv('OPENAI_API_KEY'),
