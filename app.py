@@ -1,7 +1,7 @@
 import os
 import json
 from flask import Flask, render_template, request, jsonify, send_file
-import openai  # Old import style
+from openai import OpenAI  # New API style
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 import PyPDF2
@@ -9,15 +9,17 @@ import docx
 import tempfile
 import io
 
-# Load environment variables
+# Load environment variables (for local dev; Render uses dashboard env vars)
 load_dotenv()
 
 # Initialize Flask app
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max file size
+app.config['UPLOAD_FOLDER'] = 'temp_uploads'
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
-# Set OpenAI API key (old style)
-openai.api_key = os.getenv('OPENAI_API_KEY')
+# Initialize OpenAI client (new style)
+client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 # Allowed file extensions for evidence upload
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'docx', 'doc', 'csv', 'xlsx', 'xls', 'png', 'jpg', 'jpeg'}
@@ -29,28 +31,23 @@ def extract_text_from_file(file):
     """Extract text content from uploaded files"""
     filename = secure_filename(file.filename)
     file_ext = filename.rsplit('.', 1)[1].lower()
-    
     try:
         if file_ext == 'txt':
             return file.read().decode('utf-8')
-        
         elif file_ext == 'pdf':
             pdf_reader = PyPDF2.PdfReader(file)
             text = ""
             for page in pdf_reader.pages:
                 text += page.extract_text() + "\n"
             return text
-        
         elif file_ext in ['docx', 'doc']:
-            doc = docx.Document(file)
+            doc_file = docx.Document(file)
             text = ""
-            for paragraph in doc.paragraphs:
+            for paragraph in doc_file.paragraphs:
                 text += paragraph.text + "\n"
             return text
-        
         else:
             return f"[File: {filename} - Content not extracted for this file type]"
-    
     except Exception as e:
         return f"[Error extracting text from {filename}: {str(e)}]"
 
@@ -68,13 +65,11 @@ def testing():
 def api_health():
     """Check API health and OpenAI connection"""
     try:
-        # Test OpenAI connection (old style)
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": "Test connection"}],
             max_tokens=10
         )
-        
         return jsonify({
             'status': 'healthy',
             'openai_connected': True,
@@ -95,11 +90,8 @@ def rewrite_walkthrough():
         data = request.get_json()
         control_description = data.get('control_description', '')
         walkthrough_discussion = data.get('walkthrough_discussion', '')
-        
         if not control_description or not walkthrough_discussion:
             return jsonify({'error': 'Both control description and walkthrough discussion are required'}), 400
-            
-        # Create the prompt for rewriting
         prompt = f"""
 You are a professional auditor. Please rewrite the following walkthrough discussion to be more professional, clear, and comprehensive.
 
@@ -119,9 +111,7 @@ Please provide a professionally rewritten version that:
 
 Provide only the rewritten walkthrough discussion:
 """
-        
-        # Make the API call to OpenAI (old style)
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are a professional auditor with expertise in control documentation and audit standards."},
@@ -130,14 +120,11 @@ Provide only the rewritten walkthrough discussion:
             max_tokens=1500,
             temperature=0.7
         )
-        
         rewritten_narrative = response.choices[0].message.content.strip()
-        
         return jsonify({
             'success': True,
             'narrative': rewritten_narrative
         })
-        
     except Exception as e:
         print(f"❌ Error in rewrite_walkthrough: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -146,7 +133,6 @@ Provide only the rewritten walkthrough discussion:
 def analyze_evidence():
     """Analyze uploaded evidence files using AI"""
     try:
-        # Get form data
         control_objective = request.form.get('control_objective', '')
         risk_statement = request.form.get('risk_statement', '')
         control_description = request.form.get('control_description', '')
@@ -154,49 +140,55 @@ def analyze_evidence():
         test_script = request.form.get('test_script', '')
         evidence_summary = request.form.get('evidence_summary', '')
         analysis_instructions = request.form.get('analysis_instructions', '')
-        
-        # Get uploaded files
         files = request.files.getlist('evidence')
-        
         if not files or all(file.filename == '' for file in files):
             return jsonify({'error': 'No files uploaded'}), 400
-        
-        # Extract text from all files
         evidence_content = []
+        total_content_length = 0
+        MAX_TOTAL_CONTENT = 50000  # Limit total content to 50k characters
         for file in files:
             if file and allowed_file(file.filename):
                 try:
+                    file.seek(0, 2)
+                    file_size = file.tell()
+                    file.seek(0)
+                    if file_size > 10 * 1024 * 1024:
+                        evidence_content.append(f"=== {file.filename} ===\nFile too large (>{file_size/1024/1024:.1f}MB). Please use smaller files.\n")
+                        continue
                     text_content = extract_text_from_file(file)
-                    evidence_content.append(f"=== {file.filename} ===\n{text_content}\n")
+                    if len(text_content) > 10000:
+                        text_content = text_content[:10000] + "\n[Content truncated due to size...]"
+                    file_content = f"=== {file.filename} ===\n{text_content}\n"
+                    if total_content_length + len(file_content) > MAX_TOTAL_CONTENT:
+                        evidence_content.append(f"=== {file.filename} ===\n[File skipped - total content limit reached]\n")
+                        break
+                    evidence_content.append(file_content)
+                    total_content_length += len(file_content)
                 except Exception as e:
                     evidence_content.append(f"=== {file.filename} ===\nError reading file: {str(e)}\n")
-        
         if not evidence_content:
             return jsonify({'error': 'No valid files could be processed'}), 400
-        
-        # Combine all evidence
         combined_evidence = "\n".join(evidence_content)
-        
-        # Create analysis prompt
+        max_prompt_length = 12000
+        if len(combined_evidence) > max_prompt_length:
+            combined_evidence = combined_evidence[:max_prompt_length] + "\n[Evidence truncated due to length limits...]"
         analysis_prompt = f"""
 {analysis_instructions}
 
 AUDIT CONTEXT:
-Control Objective: {control_objective}
-Risk Statement: {risk_statement}
-Control Description: {control_description}
-Walkthrough Discussion: {walkthrough_discussion}
-Test Script: {test_script}
-Evidence Summary Instructions: {evidence_summary}
+Control Objective: {control_objective[:500]}
+Risk Statement: {risk_statement[:500]}
+Control Description: {control_description[:1000]}
+Walkthrough Discussion: {walkthrough_discussion[:1000]}
+Test Script: {test_script[:1000]}
+Evidence Summary Instructions: {evidence_summary[:1000]}
 
 EVIDENCE FILES CONTENT:
 {combined_evidence}
 
 Please provide a comprehensive audit analysis that validates the Evidence Summary instructions by examining the uploaded evidence. Follow all privacy and scope requirements specified in the instructions above.
 """
-        
-        # Make API call to OpenAI (old style)
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are a professional auditor analyzing evidence files. Follow all privacy protection requirements and scope limitations strictly."},
@@ -205,15 +197,13 @@ Please provide a comprehensive audit analysis that validates the Evidence Summar
             max_tokens=2000,
             temperature=0.3
         )
-        
         analysis_result = response.choices[0].message.content.strip()
-        
         return jsonify({
             'success': True,
             'analysis': analysis_result,
-            'files_processed': len(evidence_content)
+            'files_processed': len(evidence_content),
+            'total_content_size': total_content_length
         })
-        
     except Exception as e:
         print(f"❌ Error in analyze_evidence: {str(e)}")
         return jsonify({'error': str(e)}), 500
