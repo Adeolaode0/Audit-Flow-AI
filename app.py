@@ -219,32 +219,3 @@ def clear_data():
         'message': 'Server data cleared successfully'
     })
 
-if __name__ == '__main__':
-    print("🚀 Starting Audit Flow AI with GPT-3.5-Turbo...")
-    print("=" * 70)
-    print(f"📁 Project Directory: {os.getcwd()}")
-    
-    # Check OpenAI API Key
-    api_key = os.getenv('OPENAI_API_KEY')
-    if api_key:
-        print("🔑 OpenAI API Key Status: ✅ Set")
-        # Test OpenAI connection (old style)
-        try:
-            print("🧪 Testing OpenAI connection...")
-            test_response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": "Hello"}],
-                max_tokens=5
-            )
-            print("✅ OpenAI connection successful")
-        except Exception as e:
-            print(f"❌ OpenAI connection failed: {e}")
-    else:
-        print("❌ OpenAI API Key Status: Not set")
-        print("Please add your OpenAI API key to the .env file")
-    
-    print("🌐 Server will start at: http://localhost:5000")
-    print("=" * 70)
-    
-    # Start the Flask development server
-    app.run(debug=True, host='0.0.0.0', port=5000)
