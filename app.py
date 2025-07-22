@@ -88,32 +88,8 @@ def api_health():
 
 @app.route('/api/rewrite-walkthrough', methods=['POST'])
 def rewrite_walkthrough():
-    """Rewrite walkthrough discussion using AI"""
     try:
-        data = request.get_json()
-        control_description = data.get('control_description', '')
-        walkthrough_discussion = data.get('walkthrough_discussion', '')
-        if not control_description or not walkthrough_discussion:
-            return jsonify({'error': 'Both control description and walkthrough discussion are required'}), 400
-        prompt = f"""
-You are a professional auditor. Please rewrite the following walkthrough discussion to be more professional, clear, and comprehensive.
-
-Control Context:
-{control_description}
-
-Original Walkthrough Discussion:
-{walkthrough_discussion}
-
-Please provide a professionally rewritten version that:
-1. Uses proper audit terminology
-2. Is clear and concise
-3. Follows professional audit documentation standards
-4. Maintains all important details from the original
-5. Improves structure and flow
-6. Enhances professional language
-
-Provide only the rewritten walkthrough discussion:
-"""
+        # ...existing code...
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
