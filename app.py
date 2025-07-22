@@ -129,7 +129,8 @@ Provide only the rewritten walkthrough discussion:
             'narrative': rewritten_narrative
         })
     except Exception as e:
-        print(f"❌ Error in rewrite_walkthrough: {str(e)}")
+        import traceback
+        print("❌ Error in rewrite_walkthrough:", traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/analyze-evidence', methods=['POST'])
