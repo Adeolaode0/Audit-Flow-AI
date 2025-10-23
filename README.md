@@ -5,7 +5,7 @@ This app automates IT control testing documentation using AI.
 ## Features
 - 🧠 Explain control descriptions in plain English
 - 📝 Rewrite walkthroughs using actual control owner discussions
-- 📎 Automatically draft narratives for Archer
+- 📎 Automatically draft narratives for documentation 
 - 🚀 Flask-powered web interface
 
 ## Tech Stack
